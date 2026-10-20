@@ -3,6 +3,7 @@ package architecture
 import (
 	"math"
 	"slices"
+	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
@@ -596,7 +597,7 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 		return p
 	}
 
-	var edgesOut, labelsOut string
+	var edgesOut, labelsOut strings.Builder
 	// Vertical runs of the edges, to keep group titles out from under them.
 	var runs []float64
 	trimLength := svg.MarkerTrim("arrow_point")
@@ -633,15 +634,15 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 		if edge.rhsInto && !e.wire {
 			endTrim = trimLength + e.gap
 		}
-		edgesOut += `<g class="pele-edge" data-id="` + svg.EscText(edge.lhsID+"-"+edge.rhsID) + `">` +
-			`<path d="` + pathData(points, startTrim, endTrim) + `"/>`
+		edgesOut.WriteString(`<g class="pele-edge" data-id="` + svg.EscText(edge.lhsID+"-"+edge.rhsID) + `">` +
+			`<path d="` + pathData(points, startTrim, endTrim) + `"/>`)
 		if edge.lhsInto {
-			edgesOut += svg.Marker("arrow_point", s.x+float64(s.dx*s.gap), s.y+float64(s.dy*s.gap), -s.dx, -s.dy, "var(--_l)")
+			edgesOut.WriteString(svg.Marker("arrow_point", s.x+float64(s.dx*s.gap), s.y+float64(s.dy*s.gap), -s.dx, -s.dy, "var(--_l)"))
 		}
 		if edge.rhsInto {
-			edgesOut += svg.Marker("arrow_point", e.x+float64(e.dx*e.gap), e.y+float64(e.dy*e.gap), -e.dx, -e.dy, "var(--_l)")
+			edgesOut.WriteString(svg.Marker("arrow_point", e.x+float64(e.dx*e.gap), e.y+float64(e.dy*e.gap), -e.dx, -e.dy, "var(--_l)"))
 		}
-		edgesOut += "</g>"
+		edgesOut.WriteString("</g>")
 		best, bestLength := -1, -1.0
 		flat, flatLength := -1, -1.0
 		label := edgeLabels[k]
@@ -698,11 +699,11 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 			maxX = max(maxX, x+halfW)
 			minY = min(minY, y-halfH)
 			maxY = max(maxY, y+halfH)
-			labelsOut += svg.EdgeLabelSVG(edge.lhsID+"-"+edge.rhsID, label, x, y, "", icons)
+			labelsOut.WriteString(svg.EdgeLabelSVG(edge.lhsID+"-"+edge.rhsID, label, x, y, "", icons))
 		}
 	}
 
-	clusters := ""
+	var clusters strings.Builder
 	for g, group := range groups {
 		x := left(g)
 		y := top(g)
@@ -738,20 +739,20 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 			}
 			head += svg.LabelSVG(label, textX+float64(label.Width/2), cy, ` class="pele-cluster-label" fill="var(--_m)"`, icons)
 		}
-		clusters += `<g class="pele-cluster" data-id="` + svg.EscText(group.id) + `">` +
+		clusters.WriteString(`<g class="pele-cluster" data-id="` + svg.EscText(group.id) + `">` +
 			`<rect x="` + svg.Num(x) + `" y="` + svg.Num(y) + `" width="` + svg.Num(w) + `" height="` + svg.Num(bottom(g)-y) +
 			`" rx="` + svg.Radius + `" fill="var(--_a)" fill-opacity="0.5" stroke="var(--_b)"/>` +
 			head +
-			"</g>"
+			"</g>")
 	}
 
-	nodesOut := ""
+	var nodesOut strings.Builder
 	glyph := float64(iconSize * 0.5)
 	textSize := max(6, jsmath.Round(size*0.75))
 	for i, node := range nodes {
 		at := `data-id="` + svg.EscText(node.id) + `" transform="translate(` + svg.Num(centerX(i)) + "," + svg.Num(Y[nodeRow[i]]) + `)"`
 		if node.junction {
-			nodesOut += `<g class="pele-node pele-junction" ` + at + `><circle cy="` + svg.Num(half) + `" r="` + jsnum.Format(dot) + `" fill="var(--_l)"/></g>`
+			nodesOut.WriteString(`<g class="pele-node pele-junction" ` + at + `><circle cy="` + svg.Num(half) + `" r="` + jsnum.Format(dot) + `" fill="var(--_l)"/></g>`)
 			continue
 		}
 		inner := ""
@@ -766,12 +767,12 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 			lines := max(1, math.Floor((iconSize-4)/lineHeight))
 			inner = svg.LabelSVG(fit(label, iconSize-8, lines, measurer), 0, half, ` class="pele-icon-text" font-size="`+jsnum.Format(textSize)+`"`, icons)
 		}
-		nodesOut += `<g class="pele-node pele-service" ` + at + `>` +
+		nodesOut.WriteString(`<g class="pele-node pele-service" ` + at + `>` +
 			`<rect x="` + svg.Num(-half) + `" width="` + svg.Num(iconSize) + `" height="` + svg.Num(iconSize) +
 			`" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"/>` +
 			inner +
 			svg.LabelSVG(labels[i], 0, iconSize+labelGap+float64(labels[i].Height/2), ` class="pele-label"`, icons) +
-			"</g>"
+			"</g>")
 	}
 
 	titleRoom := 4000.0
@@ -788,17 +789,17 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 	ox := jsmath.Round(float64((width-(maxX-minX))/2) - minX)
 	oy := jsmath.Round(pad + titleHeight - minY)
 	body := ""
-	if clusters != "" {
-		body += `<g class="pele-clusters">` + clusters + "</g>"
+	if clusters.Len() > 0 {
+		body += `<g class="pele-clusters">` + clusters.String() + "</g>"
 	}
-	if edgesOut != "" {
-		body += `<g class="pele-edges" fill="none" stroke="var(--_l)" stroke-linecap="round" stroke-linejoin="round">` + edgesOut + "</g>"
+	if edgesOut.Len() > 0 {
+		body += `<g class="pele-edges" fill="none" stroke="var(--_l)" stroke-linecap="round" stroke-linejoin="round">` + edgesOut.String() + "</g>"
 	}
-	if labelsOut != "" {
-		body += `<g class="pele-edge-labels" font-size="` + jsnum.Format(small) + `">` + labelsOut + "</g>"
+	if labelsOut.Len() > 0 {
+		body += `<g class="pele-edge-labels" font-size="` + jsnum.Format(small) + `">` + labelsOut.String() + "</g>"
 	}
-	if nodesOut != "" {
-		body += `<g class="pele-nodes">` + nodesOut + "</g>"
+	if nodesOut.Len() > 0 {
+		body += `<g class="pele-nodes">` + nodesOut.String() + "</g>"
 	}
 	content := svg.LabelSVG(title, float64(width/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil)
 	if body != "" {

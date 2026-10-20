@@ -3,6 +3,7 @@ package journey
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
@@ -217,7 +218,7 @@ func draw(model *journeyDb, rc *core.Context, down bool) core.Rendered {
 	chartBottom := chartTop + 4*level
 	right := left + plotW
 
-	body := ""
+	var body strings.Builder
 	bottom := top
 	if n > 0 {
 		grid := ""
@@ -227,12 +228,12 @@ func draw(model *journeyDb, rc *core.Context, down bool) core.Rendered {
 			grid += "M" + svg.Num(left-6) + "," + svg.Num(y) + "H" + svg.Num(right)
 			scale += `<text x="` + svg.Num(left-12) + `" y="` + svg.Num(y+float64(tiny*0.35)) + `">` + strconv.Itoa(score) + `</text>`
 		}
-		body += `<path class="pele-grid" d="` + grid + `" fill="none" stroke="var(--_a)"/>` +
-			`<g class="pele-scale" font-size="` + jsnum.Format(tiny) + `" text-anchor="end" fill="var(--_m)">` + scale + `</g>`
+		body.WriteString(`<path class="pele-grid" d="` + grid + `" fill="none" stroke="var(--_a)"/>` +
+			`<g class="pele-scale" font-size="` + jsnum.Format(tiny) + `" text-anchor="end" fill="var(--_m)">` + scale + `</g>`)
 
-		line := ""
-		stems := ""
-		faces := ""
+		var line strings.Builder
+		var stems strings.Builder
+		var faces strings.Builder
 		cards := make([]string, 0, n)
 		for i, task := range tasks {
 			x := left + float64(float64(i)*pitch)
@@ -247,69 +248,69 @@ func draw(model *journeyDb, rc *core.Context, down bool) core.Rendered {
 			if i == 0 {
 				cmd = "M"
 			}
-			line += cmd + svg.Num(cx) + "," + svg.Num(y)
-			stems += "M" + svg.Num(cx) + "," + svg.Num(cardsY+cardH) + "V" + svg.Num(y-faceR)
-			faces += face(cx, y, moodOf(score))
+			line.WriteString(cmd + svg.Num(cx) + "," + svg.Num(y))
+			stems.WriteString("M" + svg.Num(cx) + "," + svg.Num(cardsY+cardH) + "V" + svg.Num(y-faceR))
+			faces.WriteString(face(cx, y, moodOf(score)))
 
-			dots := ""
+			var dots strings.Builder
 			people := nonEmpty(task.people)
 			step := min(dotStep, (cardW-2*padX-2*dot)/float64(max(len(people)-1, 1)))
 			for k, name := range people {
 				offset := float64(k) - float64(float64(len(people)-1)/2)
-				dots += `<circle class="pele-actor" cx="` + svg.Num(cx+float64(offset*step)) + `" cy="` + svg.Num(cardsY+cardH-padY-dot) +
+				dots.WriteString(`<circle class="pele-actor" cx="` + svg.Num(cx+float64(offset*step)) + `" cy="` + svg.Num(cardsY+cardH-padY-dot) +
 					`" r="` + strconv.Itoa(dot) + `" fill="` + svg.SeriesColor(actor[name]) + `" stroke="var(--_s)">` +
-					`<title>` + svg.EscText(name) + `</title></circle>`
+					`<title>` + svg.EscText(name) + `</title></circle>`)
 			}
 			cards = append(cards, `<g class="pele-node pele-task" data-id="`+svg.EscText(jsstr.Trim(task.task))+`">`+
 				`<rect x="`+svg.Num(x)+`" y="`+svg.Num(cardsY)+`" width="`+svg.Num(cardW)+`" height="`+svg.Num(cardH)+`" rx="`+svg.Radius+`" fill="var(--_s)" stroke="var(--_b)"/>`+
 				svg.LabelSVG(labels[i], cx, cardsY+padY+float64(textH/2), ` font-size="`+jsnum.Format(small)+`"`, nil)+
-				dots+
+				dots.String()+
 				`</g>`)
 		}
-		body += `<path class="pele-stems" d="` + stems + `" fill="none" stroke="var(--_b)" stroke-dasharray="2 3"/>`
+		body.WriteString(`<path class="pele-stems" d="` + stems.String() + `" fill="none" stroke="var(--_b)" stroke-dasharray="2 3"/>`)
 		if n > 1 {
-			body += `<path class="pele-edge" d="` + line + `" fill="none" stroke="var(--_l)" stroke-linejoin="round"/>`
+			body.WriteString(`<path class="pele-edge" d="` + line.String() + `" fill="none" stroke="var(--_l)" stroke-linejoin="round"/>`)
 		}
-		body += faces
+		body.WriteString(faces.String())
 
 		for _, r := range runs {
-			members := ""
+			var members strings.Builder
 			for _, card := range cards[r.start : r.start+r.count] {
-				members += card
+				members.WriteString(card)
 			}
 			if r.label == nil {
-				body += members
+				body.WriteString(members.String())
 				continue
 			}
 			x := left + float64(float64(r.start)*pitch)
 			w := float64(float64(r.count)*pitch) - gap
-			body += `<g class="pele-cluster pele-section" data-id="` + svg.EscText(jsstr.Trim(tasks[r.start].section)) + `">` +
+			body.WriteString(`<g class="pele-cluster pele-section" data-id="` + svg.EscText(jsstr.Trim(tasks[r.start].section)) + `">` +
 				`<rect x="` + svg.Num(x) + `" y="` + svg.Num(top) + `" width="` + svg.Num(w) + `" height="` + svg.Num(bandH) + `" rx="` + svg.Radius + `" fill="var(--_a)"/>` +
 				svg.LabelSVG(*r.label, x+float64(w/2), top+float64(bandH/2), ` font-size="`+jsnum.Format(small)+`" font-weight="var(--_hw)"`, nil) +
-				members +
-				`</g>`
+				members.String() +
+				`</g>`)
 		}
 		bottom = chartBottom + faceR
 
 		if len(legend) > 0 {
 			x0 := left + float64((plotW-legendW)/2)
 			y0 := bottom + 16
-			items := ""
+			var items strings.Builder
 			for _, item := range legend {
 				cy := y0 + item.y + float64(item.h/2)
-				items += `<g class="pele-legend-item" data-id="` + svg.EscText(item.name) + `">` +
+				items.WriteString(`<g class="pele-legend-item" data-id="` + svg.EscText(item.name) + `">` +
 					`<circle cx="` + svg.Num(x0+item.x+dot) + `" cy="` + svg.Num(cy) + `" r="` + strconv.Itoa(dot) + `" fill="` + svg.SeriesColor(actor[item.name]) + `"/>` +
 					svg.LabelSVG(item.label, x0+item.x+2*dot+6+float64(item.label.Width/2), cy, "", nil) +
-					`</g>`
+					`</g>`)
 			}
-			body += `<g class="pele-legend" font-size="` + jsnum.Format(small) + `">` + items + `</g>`
+			body.WriteString(`<g class="pele-legend" font-size="` + jsnum.Format(small) + `">` + items.String() + `</g>`)
 			bottom = y0 + legendH
 		}
 	}
 
 	totalWidth := math.Ceil(width + float64(2*pad))
 	totalHeight := math.Ceil(max(bottom, pad) + pad)
-	content := svg.LabelSVG(title, pad+float64(width/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) + body
+	content := svg.LabelSVG(title, pad+float64(width/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) + body.String()
 	return core.Rendered{
 		SVG:    document(totalWidth, totalHeight, size, rc, model, content),
 		Width:  totalWidth,
@@ -343,14 +344,14 @@ func verticalJourney(model *journeyDb, rc *core.Context) core.Rendered {
 	}
 	// Upstream starts from undefined, which no section equals.
 	var section *string
-	body := ""
+	var body strings.Builder
 	width := title.Width
 	for index, task := range model.tasks {
 		if section == nil || task.section != *section {
 			section = &task.section
 			head := common.FitLabel(*section, measurer, size, room-16, text.Bold)
 			if head.Height != 0 {
-				body += svg.LabelSVG(head, pad+8+float64(head.Width/2), y+float64(head.Height/2), ` class="pele-cluster-label" font-weight="var(--_hw)"`, nil)
+				body.WriteString(svg.LabelSVG(head, pad+8+float64(head.Width/2), y+float64(head.Height/2), ` class="pele-cluster-label" font-weight="var(--_hw)"`, nil))
 				width = max(width, head.Width+16)
 				y += head.Height + 8
 			}
@@ -366,27 +367,27 @@ func verticalJourney(model *journeyDb, rc *core.Context) core.Rendered {
 			h += max(16, p.label.Height) + 4
 		}
 		w := max(room, label.Width+72)
-		body += `<g class="pele-node pele-journey-step" data-id="` + strconv.Itoa(index) + `"><rect x="` + svg.Num(pad) + `" y="` + svg.Num(y) +
-			`" width="` + svg.Num(w) + `" height="` + svg.Num(h) + `" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"/>`
-		body += svg.LabelSVG(label, pad+padX+float64(label.Width/2), y+padY+float64(label.Height/2), ` class="pele-label"`, nil)
+		body.WriteString(`<g class="pele-node pele-journey-step" data-id="` + strconv.Itoa(index) + `"><rect x="` + svg.Num(pad) + `" y="` + svg.Num(y) +
+			`" width="` + svg.Num(w) + `" height="` + svg.Num(h) + `" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"/>`)
+		body.WriteString(svg.LabelSVG(label, pad+padX+float64(label.Width/2), y+padY+float64(label.Height/2), ` class="pele-label"`, nil))
 		cx := pad + w - 28
-		body += face(cx, y+padY+faceR, moodOf(task.score))
+		body.WriteString(face(cx, y+padY+faceR, moodOf(task.score)))
 		if !math.IsNaN(task.score) {
-			body += `<text class="pele-journey-score" x="` + svg.Num(cx) + `" y="` + svg.Num(y+padY+2*faceR+small) + `" font-size="` + jsnum.Format(small) +
-				`" text-anchor="middle">` + svg.Num(min(5, max(1, task.score))) + `</text>`
+			body.WriteString(`<text class="pele-journey-score" x="` + svg.Num(cx) + `" y="` + svg.Num(y+padY+2*faceR+small) + `" font-size="` + jsnum.Format(small) +
+				`" text-anchor="middle">` + svg.Num(min(5, max(1, task.score))) + `</text>`)
 		}
 		py := y + padY + textH + 4
 		for _, p := range people {
 			ph := max(16, p.label.Height)
-			body += `<circle class="pele-actor" cx="` + svg.Num(pad+16) + `" cy="` + svg.Num(py+float64(ph/2)) + `" r="` + strconv.Itoa(dot) +
+			body.WriteString(`<circle class="pele-actor" cx="` + svg.Num(pad+16) + `" cy="` + svg.Num(py+float64(ph/2)) + `" r="` + strconv.Itoa(dot) +
 				`" fill="` + svg.SeriesColor(actors[p.name]) + `"/>` +
-				svg.LabelSVG(p.label, pad+28+float64(p.label.Width/2), py+float64(ph/2), ` class="pele-journey-actor" font-size="`+jsnum.Format(small)+`"`, nil)
+				svg.LabelSVG(p.label, pad+28+float64(p.label.Width/2), py+float64(ph/2), ` class="pele-journey-actor" font-size="`+jsnum.Format(small)+`"`, nil))
 			py += ph + 4
 		}
-		body += `</g>`
+		body.WriteString(`</g>`)
 		y += h
 		if index+1 < len(model.tasks) {
-			body += `<path class="pele-edge" d="M` + svg.Num(pad+float64(w/2)) + `,` + svg.Num(y) + `v16" fill="none" stroke="var(--_l)"/>`
+			body.WriteString(`<path class="pele-edge" d="M` + svg.Num(pad+float64(w/2)) + `,` + svg.Num(y) + `v16" fill="none" stroke="var(--_l)"/>`)
 		}
 		y += 16
 		width = max(width, w)
@@ -397,6 +398,6 @@ func verticalJourney(model *journeyDb, rc *core.Context) core.Rendered {
 		tail = 16
 	}
 	height := math.Ceil(max(pad+title.Height, y-tail) + pad)
-	content := svg.LabelSVG(title, float64(totalWidth/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) + body
+	content := svg.LabelSVG(title, float64(totalWidth/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) + body.String()
 	return core.Rendered{SVG: document(totalWidth, height, size, rc, model, content), Width: totalWidth, Height: height, Links: []core.Link{}}
 }

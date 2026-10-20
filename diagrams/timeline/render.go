@@ -2,6 +2,7 @@ package timeline
 
 import (
 	"math"
+	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
@@ -234,7 +235,9 @@ func draw(model *timelineDb, config *jsobj.Object, rc *core.Context, vertical bo
 		return `<g class="pele-node pele-period" data-id="` + svg.EscText(jsstr.Trim(periods[i].text)) + `">`
 	}
 
-	body := ""
+	var body strings.Builder
+	// axisPath goes before body, which is written first.
+	axisPath := ""
 	var height float64
 
 	if vertical {
@@ -243,44 +246,45 @@ func draw(model *timelineDb, config *jsobj.Object, rc *core.Context, vertical bo
 		eventsX := spineX + spine
 		y := top
 		for _, g := range groups {
-			body += open(g)
+			body.WriteString(open(g))
 			if g.section >= 0 {
 				label := sectionLabel(g, bodyW)
 				h := chipHeight(label)
-				body += header(g, label, left, y, bodyW, h)
+				body.WriteString(header(g, label, left, y, bodyW, h))
 				y += h + sectionGap + 4
 			}
 			for _, i := range g.periods {
 				color := colorOf(g, i)
 				h := chipHeight(periodLabels[i])
 				cy := y + float64(h/2)
-				d := "M" + svg.Num(left+colW) + "," + svg.Num(cy) + "H" + svg.Num(axisX)
-				cards := ""
+				var d strings.Builder
+				d.WriteString("M" + svg.Num(left+colW) + "," + svg.Num(cy) + "H" + svg.Num(axisX))
+				var cards strings.Builder
 				ey := y
 				last := cy
 				for _, label := range eventLabels[i] {
 					eh := eventHeight(label)
 					last = ey + float64(eh/2)
-					d += "M" + svg.Num(spineX) + "," + svg.Num(last) + "H" + svg.Num(eventsX)
-					cards += event(label, color, eventsX, ey, eh)
+					d.WriteString("M" + svg.Num(spineX) + "," + svg.Num(last) + "H" + svg.Num(eventsX))
+					cards.WriteString(event(label, color, eventsX, ey, eh))
 					ey += eh + eventGap
 				}
-				if cards != "" {
-					d += "M" + svg.Num(axisX) + "," + svg.Num(cy) + "H" + svg.Num(spineX) + "V" + svg.Num(last)
+				if cards.Len() > 0 {
+					d.WriteString("M" + svg.Num(axisX) + "," + svg.Num(cy) + "H" + svg.Num(spineX) + "V" + svg.Num(last))
 				}
-				body += openPeriod(i) +
+				body.WriteString(openPeriod(i) +
 					period(i, color, left, y, h) +
-					`<path class="pele-edge" d="` + d + `"` + line + `/>` +
+					`<path class="pele-edge" d="` + d.String() + `"` + line + `/>` +
 					dot(axisX, cy, color) +
-					cards +
-					`</g>`
+					cards.String() +
+					`</g>`)
 				y = max(y+h, ey-eventGap) + gap
 			}
 			if len(g.periods) == 0 {
 				y += gap - sectionGap - 4
 			}
 			if g.section >= 0 {
-				body += `</g>`
+				body.WriteString(`</g>`)
 			}
 		}
 		if len(groups) > 0 {
@@ -288,9 +292,8 @@ func draw(model *timelineDb, config *jsobj.Object, rc *core.Context, vertical bo
 		}
 		if drawn {
 			tip := y + tail + svg.Arrow
-			body = `<path class="pele-axis" d="M` + svg.Num(axisX) + `,` + svg.Num(top) + `V` + svg.Num(tip-svg.Arrow+1) + `" fill="none" stroke="var(--_l)"/>` +
-				svg.Marker("arrow_point", axisX, tip, 0, 1, "var(--_l)") +
-				body
+			axisPath = `<path class="pele-axis" d="M` + svg.Num(axisX) + `,` + svg.Num(top) + `V` + svg.Num(tip-svg.Arrow+1) + `" fill="none" stroke="var(--_l)"/>` +
+				svg.Marker("arrow_point", axisX, tip, 0, 1, "var(--_l)")
 			y = tip
 		}
 		height = y + pad
@@ -326,9 +329,9 @@ func draw(model *timelineDb, config *jsobj.Object, rc *core.Context, vertical bo
 		for k, g := range groups {
 			span := max(len(g.periods), 1)
 			gx := left + float64(float64(slot)*pitch)
-			body += open(g)
+			body.WriteString(open(g))
 			if label := sectionLabels[k]; label != nil {
-				body += header(g, *label, gx, top, float64(float64(span)*pitch)-gap, headerH)
+				body.WriteString(header(g, *label, gx, top, float64(float64(span)*pitch)-gap, headerH))
 			}
 			for j, i := range g.periods {
 				color := colorOf(g, i)
@@ -338,42 +341,42 @@ func draw(model *timelineDb, config *jsobj.Object, rc *core.Context, vertical bo
 				if len(eventLabels[i]) > 0 {
 					to = eventsY
 				}
-				d := "M" + svg.Num(cx) + "," + svg.Num(periodsY+chipH) + "V" + svg.Num(to)
-				cards := ""
+				var d strings.Builder
+				d.WriteString("M" + svg.Num(cx) + "," + svg.Num(periodsY+chipH) + "V" + svg.Num(to))
+				var cards strings.Builder
 				ey := eventsY
 				for _, eventLabel := range eventLabels[i] {
 					eh := eventHeight(eventLabel)
 					if ey > eventsY {
-						d += "M" + svg.Num(cx) + "," + svg.Num(ey-eventGap) + "V" + svg.Num(ey)
+						d.WriteString("M" + svg.Num(cx) + "," + svg.Num(ey-eventGap) + "V" + svg.Num(ey))
 					}
-					cards += event(eventLabel, color, x, ey, eh)
+					cards.WriteString(event(eventLabel, color, x, ey, eh))
 					ey += eh + eventGap
 				}
 				bottom = max(bottom, ey-eventGap)
-				body += openPeriod(i) +
+				body.WriteString(openPeriod(i) +
 					period(i, color, x, periodsY, chipH) +
-					`<path class="pele-edge" d="` + d + `"` + line + `/>` +
+					`<path class="pele-edge" d="` + d.String() + `"` + line + `/>` +
 					dot(cx, axisY, color) +
-					cards +
-					`</g>`
+					cards.String() +
+					`</g>`)
 			}
 			if g.section >= 0 {
-				body += `</g>`
+				body.WriteString(`</g>`)
 			}
 			slot += span
 		}
 		if drawn {
 			tip := left + bodyW
-			body = `<path class="pele-axis" d="M` + svg.Num(left) + `,` + svg.Num(axisY) + `H` + svg.Num(tip-svg.Arrow+1) + `" fill="none" stroke="var(--_l)"/>` +
-				svg.Marker("arrow_point", tip, axisY, 1, 0, "var(--_l)") +
-				body
+			axisPath = `<path class="pele-axis" d="M` + svg.Num(left) + `,` + svg.Num(axisY) + `H` + svg.Num(tip-svg.Arrow+1) + `" fill="none" stroke="var(--_l)"/>` +
+				svg.Marker("arrow_point", tip, axisY, 1, 0, "var(--_l)")
 		}
 		height = bottom + pad
 	}
 
 	totalWidth := math.Ceil(width + float64(2*pad))
 	totalHeight := math.Ceil(max(height, float64(pad*2)))
-	content := svg.LabelSVG(title, float64(totalWidth/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) + body
+	content := svg.LabelSVG(title, float64(totalWidth/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) + axisPath + body.String()
 	return core.Rendered{
 		SVG: svg.Document("timeline", totalWidth, totalHeight, size, svg.DocumentOptions{
 			IDPrefix:       opts.IDPrefix,

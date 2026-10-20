@@ -128,7 +128,7 @@ func fitLabel(raw string, markdown bool, measurer text.Measurer, size, max float
 // textBlock writes a label with every line starting at x, or ending there, and the first
 // line's box starting at y.
 func textBlock(label text.Label, x, y float64, attrs string, icons *text.Icons, end bool) string {
-	out := ""
+	var out strings.Builder
 	for i, line := range label.Lines {
 		cy := y + float64((float64(i)+0.5)*label.LineHeight)
 		if len(line) == 1 && line[0].Icon == "" {
@@ -136,8 +136,8 @@ func textBlock(label text.Label, x, y float64, attrs string, icons *text.Icons, 
 			if end {
 				anchor = ` text-anchor="end"`
 			}
-			out += `<text` + svg.TextStyle(attrs, line[0].Style) + ` x="` + svg.Num(x) + `" y="` + svg.Num(cy+float64(label.Size*0.35)) + `"` + anchor + `>` +
-				svg.Esc(line[0].Text) + `</text>`
+			out.WriteString(`<text` + svg.TextStyle(attrs, line[0].Style) + ` x="` + svg.Num(x) + `" y="` + svg.Num(cy+float64(label.Size*0.35)) + `"` + anchor + `>` +
+				svg.Esc(line[0].Text) + `</text>`)
 		} else {
 			width := label.Widths[i]
 			one := label
@@ -149,10 +149,10 @@ func textBlock(label text.Label, x, y float64, attrs string, icons *text.Icons, 
 			if end {
 				shift = -width
 			}
-			out += svg.LabelSVG(one, x+float64(shift/2), cy, attrs, icons)
+			out.WriteString(svg.LabelSVG(one, x+float64(shift/2), cy, attrs, icons))
 		}
 	}
-	return out
+	return out.String()
 }
 
 type card struct {
@@ -287,12 +287,13 @@ func renderKanban(model *kanbanDb, config *jsobj.Object, rc *core.Context) core.
 	var out strings.Builder
 	for index, section := range sections {
 		row := index / perRow
-		body := `<rect width="` + jsnum.Format(columnWidth) + `" height="` + svg.Num(rowHeights[row]) + `" rx="` + svg.Radius + `" fill="var(--_s)"/>` +
+		var body strings.Builder
+		body.WriteString(`<rect width="` + jsnum.Format(columnWidth) + `" height="` + svg.Num(rowHeights[row]) + `" rx="` + svg.Radius + `" fill="var(--_s)"/>` +
 			textBlock(titles[index], columnPad+4, columnPad, ` class="pele-cluster-label" font-weight="var(--_hw)"`, icons, false) +
 			`<text class="pele-count" x="` + jsnum.Format(edge) + `" y="` + svg.Num(columnPad+float64(line/2)+float64(small*0.35)) +
-			`" text-anchor="end" font-size="` + jsnum.Format(small) + `" fill="var(--_m)">` + strconv.Itoa(len(section.items)) + `</text>`
+			`" text-anchor="end" font-size="` + jsnum.Format(small) + `" fill="var(--_m)">` + strconv.Itoa(len(section.items)) + `</text>`)
 		if has(section.icon) {
-			body += common.IconSVG(section.icon, edge-countWidths[index]-iconGap-glyph, columnPad+float64((line-glyph)/2), glyph, icons)
+			body.WriteString(common.IconSVG(section.icon, edge-countWidths[index]-iconGap-glyph, columnPad+float64((line-glyph)/2), glyph, icons))
 		}
 
 		y := headHeight
@@ -331,14 +332,14 @@ func renderKanban(model *kanbanDb, config *jsobj.Object, rc *core.Context) core.
 			if colored {
 				class = " pele-priority-" + strings.Replace(priority, " ", "-", 1)
 			}
-			body += `<g class="pele-node pele-card` + class + svg.ClassNames(item.cssClasses) + `" data-id="` + svg.EscText(item.id) +
-				`" transform="translate(` + strconv.Itoa(columnPad) + `,` + svg.Num(y) + `)" font-size="` + jsnum.Format(small) + `">` + inner + `</g>`
+			body.WriteString(`<g class="pele-node pele-card` + class + svg.ClassNames(item.cssClasses) + `" data-id="` + svg.EscText(item.id) +
+				`" transform="translate(` + strconv.Itoa(columnPad) + `,` + svg.Num(y) + `)" font-size="` + jsnum.Format(small) + `">` + inner + `</g>`)
 			y += c.height + cardGap
 		}
 
 		out.WriteString(`<g class="pele-cluster pele-column` + svg.ClassNames(section.cssClasses) + `" data-id="` + svg.EscText(section.id) +
 			`" transform="translate(` + svg.Num(left+float64(float64(index%perRow)*(columnWidth+columnGap))) + `,` + svg.Num(pad+titleHeight+rowTops[row]) + `)">` +
-			body + `</g>`)
+			body.String() + `</g>`)
 	}
 
 	totalWidth := math.Ceil(width + float64(2*pad))
