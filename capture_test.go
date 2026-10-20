@@ -23,16 +23,21 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 )
 
-// capturedShards are the shards of internal/oracle/testdata/captured replayed so far: the
-// ported types, and inputs no type was detected in.
-var capturedShards = []string{"info", "none"}
-
 // TestCapturedParity replays every public parse and render call upstream's own test suite
 // made (captured under V8 by scripts/capture-cases.mjs) and checks the port returns what
-// upstream did.
+// upstream did. Each registered type's shard is replayed, and the shard of inputs no type
+// was detected in.
 func TestCapturedParity(t *testing.T) {
-	for _, shard := range capturedShards {
+	files, err := filepath.Glob(shardPath("*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		shard := strings.TrimSuffix(filepath.Base(file), ".jsonl.gz")
 		t.Run(shard, func(t *testing.T) {
+			if shard != "none" && !core.Registered(shard) {
+				t.Skip("not registered")
+			}
 			records := readShard(t, shard)
 			if len(records) == 0 {
 				t.Fatal("no captured calls")
@@ -44,9 +49,13 @@ func TestCapturedParity(t *testing.T) {
 	}
 }
 
+func shardPath(name string) string {
+	return filepath.Join("internal", "oracle", "testdata", "captured", name+".jsonl.gz")
+}
+
 func readShard(t testing.TB, name string) []*jsobj.Object {
 	t.Helper()
-	f, err := os.Open(filepath.Join("internal", "oracle", "testdata", "captured", name+".jsonl.gz"))
+	f, err := os.Open(shardPath(name))
 	if err != nil {
 		t.Fatal(err)
 	}

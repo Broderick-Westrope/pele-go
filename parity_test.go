@@ -3,6 +3,7 @@ package pele_test
 import (
 	"context"
 	"errors"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -115,55 +116,151 @@ var infoInputs = []string{
 	strings.Repeat("x", 50001),
 }
 
-func TestInfoParity(t *testing.T) {
-	o := newOracle(t)
-	inputs := append(corpus(t, "info-docs.json"), infoInputs...)
-	for _, src := range inputs {
-		for _, set := range optionSets {
-			assertParity(t, o, src, set, nil)
-			assertParity(t, o, src, set, lengthMeasurer{})
-		}
-	}
+// handInputs are hand-written sources by diagram type, checked with the corpus.
+var handInputs = map[string][]string{"info": infoInputs}
+
+// v8Inputs are hand-written sources by diagram type that only V8 can judge.
+var v8Inputs = map[string][]string{"info": loneSurrogateInputs}
+
+// corpusFileTypes names the diagram type of each corpus file whose name is not
+// "<type>-docs.json".
+var corpusFileTypes = map[string]string{
+	"agentflow-reference.json": "agentflow",
+	"git-docs.json":            "gitGraph",
+	"quadrant-docs.json":       "quadrantChart",
+	"treeview-docs.json":       "treeView",
 }
 
-func TestDetectTypeParity(t *testing.T) {
-	o := newOracle(t)
+// corpusByType returns every corpus source, by the diagram type of the file it is in.
+func corpusByType(t testing.TB) map[string][]string {
+	t.Helper()
 	files, err := filepath.Glob(filepath.Join("internal", "oracle", "testdata", "corpus", "*.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	byType := map[string][]string{}
 	for _, file := range files {
-		for _, src := range corpus(t, filepath.Base(file)) {
-			want, err := o.DetectType(src)
-			if err != nil {
-				want = ""
-			}
-			got, ok := pele.DetectType(src)
-			if !ok {
-				got = ""
-			}
-			if string(got) != want {
-				t.Errorf("DetectType(%q) = %q, want %q", src, got, want)
-			}
+		name := filepath.Base(file)
+		typ, ok := corpusFileTypes[name]
+		if !ok {
+			typ, ok = strings.CutSuffix(name, "-docs.json")
 		}
+		if _, err := os.Stat(shardPath(typ)); !ok || err != nil {
+			t.Fatalf("corpus file %s: no diagram type %q with a captured shard; add it to corpusFileTypes", name, typ)
+		}
+		byType[typ] = append(byType[typ], corpus(t, name)...)
 	}
-	for _, src := range infoInputs {
+	return byType
+}
+
+// portable drops the sources of a type that is not registered, which only fail in the port.
+func portable(sources []string) []string {
+	return slices.DeleteFunc(slices.Clone(sources), func(src string) bool {
+		typ, ok := core.DetectType(src)
+		return ok && !core.Registered(typ)
+	})
+}
+
+// TestCorpusParity checks every corpus source of each registered type, and the hand-written
+// inputs, against Pele in goja and in Node, across the option sets and both measurers.
+func TestCorpusParity(t *testing.T) {
+	byType := corpusByType(t)
+	for typ, inputs := range handInputs {
+		byType[typ] = append(byType[typ], inputs...)
+	}
+	var o *oracle.Oracle
+	var node *oracle.Node
+	for _, typ := range slices.Sorted(maps.Keys(byType)) {
+		t.Run(typ, func(t *testing.T) {
+			if !core.Registered(typ) {
+				t.Skip("not registered")
+			}
+			sources := portable(byType[typ])
+			t.Run("goja", func(t *testing.T) {
+				if o == nil {
+					o = newOracle(t)
+				}
+				for _, src := range sources {
+					for _, set := range optionSets {
+						assertParity(t, o, src, set, nil)
+						assertParity(t, o, src, set, lengthMeasurer{})
+					}
+				}
+			})
+			t.Run("v8", func(t *testing.T) {
+				if node == nil {
+					node = startNode(t)
+				}
+				for _, src := range append(sources, v8Inputs[typ]...) {
+					for _, set := range optionSets {
+						assertParityV8(t, node, src, set, "")
+						assertParityV8(t, node, src, set, "length")
+					}
+				}
+			})
+		})
+	}
+	if node != nil {
+		_ = node.Close()
+	}
+}
+
+// startNode starts the V8 oracle, skipping the test when node is not installed.
+func startNode(t testing.TB) *oracle.Node {
+	t.Helper()
+	node, err := oracle.NewNode()
+	if errors.Is(err, exec.ErrNotFound) {
+		t.Skip("node is not installed")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return node
+}
+
+func TestDetectTypeParity(t *testing.T) {
+	o := newOracle(t)
+	byType := corpusByType(t)
+	var sources []string
+	for _, typ := range slices.Sorted(maps.Keys(byType)) {
+		sources = append(sources, byType[typ]...)
+	}
+	for _, typ := range slices.Sorted(maps.Keys(handInputs)) {
+		sources = append(sources, handInputs[typ]...)
+	}
+	for _, src := range sources {
 		want, err := o.DetectType(src)
 		if err != nil {
 			want = ""
 		}
-		got, _ := pele.DetectType(src)
+		got, ok := pele.DetectType(src)
+		if !ok {
+			got = ""
+		}
 		if string(got) != want {
 			t.Errorf("DetectType(%q) = %q, want %q", src, got, want)
 		}
 	}
 }
 
-// fuzzSeeds are the info inputs the parity gates know: hand-written, from the corpus, and
-// from upstream's test suite as captured.
-func fuzzSeeds(f *testing.F, extra ...string) {
-	seeds := append(append(slices.Clone(infoInputs), extra...), corpus(f, "info-docs.json")...)
-	for _, rec := range readShard(f, "info") {
+// fuzzType is the diagram type FuzzParity and FuzzParityV8 fuzz: PELE_FUZZ_TYPE, or info.
+func fuzzType(f *testing.F) string {
+	typ := os.Getenv("PELE_FUZZ_TYPE")
+	if typ == "" {
+		typ = "info"
+	}
+	if !core.Registered(typ) {
+		f.Fatalf("PELE_FUZZ_TYPE=%s is not a registered diagram type", typ)
+	}
+	return typ
+}
+
+// fuzzSeeds are the inputs of a type the parity gates know: hand-written, from the corpus,
+// and from upstream's test suite as captured.
+func fuzzSeeds(f *testing.F, typ string, extra ...string) {
+	seeds := append(slices.Clone(handInputs[typ]), extra...)
+	seeds = append(seeds, corpusByType(f)[typ]...)
+	for _, rec := range readShard(f, typ) {
 		if src, ok := rec.Get("src"); ok {
 			seeds = append(seeds, src.(string))
 		}
@@ -175,12 +272,14 @@ func fuzzSeeds(f *testing.F, extra ...string) {
 	}
 }
 
-func FuzzInfoParity(f *testing.F) {
-	fuzzSeeds(f)
+// FuzzParity fuzzes the type PELE_FUZZ_TYPE names against Pele in goja.
+func FuzzParity(f *testing.F) {
+	typ := fuzzType(f)
+	fuzzSeeds(f, typ)
 	o := newOracle(f)
 	f.Fuzz(func(t *testing.T, src string) {
-		if typ, err := o.DetectType(src); err == nil && typ != "" && typ != "info" {
-			t.Skip("not an info diagram")
+		if got, err := o.DetectType(src); err == nil && got != "" && got != typ {
+			t.Skipf("not a %s diagram", typ)
 		}
 		assertParity(t, o, src, optionSets[0], nil)
 	})
@@ -338,35 +437,21 @@ var loneSurrogateInputs = []string{
 	"info\ntitle " + strings.Repeat("lone "+jsstr.FromUTF16([]uint16{0xdc01})+" ", 300),
 }
 
-// TestInfoParityV8 checks the port against Pele in Node, which keeps lone surrogates where
-// goja does not, across the option sets and both measurers the driver knows.
-func TestInfoParityV8(t *testing.T) {
-	node, err := oracle.NewNode()
-	if errors.Is(err, exec.ErrNotFound) {
-		t.Skip("node is not installed")
-	}
+// assertParityV8 compares the port with Pele in Node, which keeps lone surrogates where goja
+// does not. measurer names a measurer the driver defines, or "" for the default.
+func assertParityV8(t *testing.T, node *oracle.Node, src string, set optionSet, measurer string) {
+	t.Helper()
+	want, wantErr, err := node.Render(src, oracle.NodeOptions{
+		Options: set.js, Measurer: measurer, Now: float64(fixedNow.UnixMilli()),
+	})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("node render %q: %v", src, err)
 	}
-	defer node.Close()
-	inputs := append(append(corpus(t, "info-docs.json"), infoInputs...), loneSurrogateInputs...)
-	for _, src := range inputs {
-		for _, set := range optionSets {
-			for _, measurer := range []string{"", "length"} {
-				want, wantErr, err := node.Render(src, oracle.NodeOptions{
-					Options: set.js, Measurer: measurer, Now: float64(fixedNow.UnixMilli()),
-				})
-				if err != nil {
-					t.Fatalf("node render %q: %v", src, err)
-				}
-				var m pele.TextMeasurer
-				if measurer == "length" {
-					m = lengthMeasurer{}
-				}
-				compare(t, "v8/"+set.name+"/"+measurer, src, set.options(m), want, wantErr)
-			}
-		}
+	var m pele.TextMeasurer
+	if measurer == "length" {
+		m = lengthMeasurer{}
 	}
+	compare(t, "v8/"+set.name+"/"+measurer, src, set.options(m), want, wantErr)
 }
 
 func oracleLinks(links []pele.Link) []oracle.Link {
@@ -389,40 +474,25 @@ func hasLoneSurrogate(s string) bool {
 	return jsstr.WellFormed(jsstr.Normalize(s)) != jsstr.Normalize(s)
 }
 
-// FuzzInfoParityV8 fuzzes against Pele in Node, which is slower than goja but judges lone
-// surrogates correctly.
-func FuzzInfoParityV8(f *testing.F) {
-	fuzzSeeds(f, loneSurrogateInputs...)
-	node, err := oracle.NewNode()
-	if errors.Is(err, exec.ErrNotFound) {
-		f.Skip("node is not installed")
-	}
-	if err != nil {
-		f.Fatal(err)
-	}
+// FuzzParityV8 fuzzes the type PELE_FUZZ_TYPE names against Pele in Node, which is slower
+// than goja but judges lone surrogates correctly.
+func FuzzParityV8(f *testing.F) {
+	typ := fuzzType(f)
+	fuzzSeeds(f, typ, v8Inputs[typ]...)
+	node := startNode(f)
 	f.Cleanup(func() { _ = node.Close() })
 	f.Fuzz(func(t *testing.T, src string) {
-		if typ, ok := pele.DetectType(src); ok && typ != "info" {
-			t.Skip("not an info diagram")
+		if got, ok := pele.DetectType(src); ok && string(got) != typ {
+			t.Skipf("not a %s diagram", typ)
 		}
-		want, wantErr, err := node.Render(src, oracle.NodeOptions{Now: float64(fixedNow.UnixMilli())})
-		if err != nil {
-			t.Fatalf("node render %q: %v", src, err)
-		}
-		compare(t, "v8", src, optionSets[0].options(nil), want, wantErr)
+		assertParityV8(t, node, src, optionSets[0], "")
 	})
 }
 
 // TestFontFamilyFollowsV8Unicode checks font names against V8's Unicode tables, which are
 // newer than Go's: U+1C89 is a letter in Unicode 16 but not in Go's Unicode 15.
 func TestFontFamilyFollowsV8Unicode(t *testing.T) {
-	node, err := oracle.NewNode()
-	if errors.Is(err, exec.ErrNotFound) {
-		t.Skip("node is not installed")
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
+	node := startNode(t)
 	defer node.Close()
 	for _, family := range []string{"\u1c89 Sans", "Noto \U0001E5D0", "Inter"} {
 		want, wantErr, err := node.Render("info", oracle.NodeOptions{Options: map[string]any{"fontFamily": family}})
