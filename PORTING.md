@@ -92,6 +92,10 @@ Per-render state goes on the model or `core.Context`.
 2. Fuzz for at least 60 s per type: `go test -run '^$' -fuzz '^FuzzParity$' -fuzztime 60s .`
    with `PELE_FUZZ_TYPE=<type>` (goja), and `FuzzParityV8` the same way. Keep failing
    inputs the fuzzer writes under `testdata/fuzz`.
+   Then run `PELE_GEN=2000 PELE_GEN_TYPE=<type> go test -run '^TestGeneratedParity$' .`
+   (and again with `PELE_GEN_BIG=1`), which builds big valid diagrams from the corpus and
+   checks them against V8; mismatches land in `PELE_GEN_OUT`. `PELE_PROBE=<file>` with
+   `-run '^TestProbe$'` checks one source.
 3. Port upstream's model-level assertions from `tests/compat/<type>/` as package-internal
    Go tests where they explain behaviour a parity failure would not.
 4. Debugging a mismatch: `go test -run 'TestCapturedParity/<type>' .` names the source and
