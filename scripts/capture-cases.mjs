@@ -83,5 +83,19 @@ for (const [type, lines] of Object.entries(shards).sort()) {
   manifest.byType[type] = lines.length;
   writeFileSync(join(out, `${type}.jsonl.gz`), gzipSync(lines.join('\n') + '\n', { level: 9 }));
 }
-writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
+// Calls that cannot be replayed are a gap in the parity gate. More of them than last time
+// fails the capture instead of quietly narrowing the gate.
+const total = (m) => Object.values(m.unsupported).reduce((a, b) => a + b, 0);
+const manifestPath = join(out, 'manifest.json');
+let baseline;
+try {
+  baseline = JSON.parse(readFileSync(manifestPath, 'utf8'));
+} catch {
+  baseline = undefined;
+}
+writeFileSync(manifestPath, JSON.stringify(manifest, null, 1) + '\n');
 console.log(manifest);
+if (baseline && total(manifest) > total(baseline)) {
+  console.error(`unreplayable calls rose from ${total(baseline)} to ${total(manifest)}`);
+  process.exit(1);
+}
