@@ -188,6 +188,11 @@ section('jsmath', () => {
   for (let i = 0; i < 2500; i++) pairs.push(random() < 0.5 ? [sizes(), sizes()] : [(random() - 0.5) * 200, (random() - 0.5) * 200]);
   for (let i = 0; i < 200; i++) pairs.push([(random() - 0.5) * 20, 1]);
   for (const [y, x] of pairs) cases.push(call(Math.atan2, 'atan2', [y, x]));
+  const logs = [0, -0, -1, 1, Infinity, NaN, 5e-324, 2.2250738585072014e-308, 1 - 2 ** -53, 1 + 2 ** -52, Math.E];
+  for (let p = -310; p <= 308; p++) logs.push(Number(`1e${p}`), Number(`1e${p}`) * (1 - 2 ** -53), Number(`1e${p}`) * (1 + 2 ** -52));
+  for (let i = 0; i < 2000; i++) logs.push(random() * 2 ** (Math.floor(random() * 120) - 60));
+  for (let i = 0; i < 300; i++) logs.push(1 + (random() - 0.5) * 2 ** -(Math.floor(random() * 30)));
+  for (const x of logs) cases.push(call(Math.log10, 'log10', [x]));
   return cases;
 });
 
