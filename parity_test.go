@@ -343,3 +343,31 @@ func outputHasLoneSurrogate(src string, opts pele.Options) bool {
 func hasLoneSurrogate(s string) bool {
 	return jsstr.WellFormed(jsstr.Normalize(s)) != jsstr.Normalize(s)
 }
+
+// FuzzInfoParityV8 fuzzes against Pele in Node, which is slower than goja but judges lone
+// surrogates correctly.
+func FuzzInfoParityV8(f *testing.F) {
+	for _, src := range append(infoInputs, loneSurrogateInputs...) {
+		if len(src) < 1000 {
+			f.Add(src)
+		}
+	}
+	node, err := oracle.NewNode()
+	if errors.Is(err, exec.ErrNotFound) {
+		f.Skip("node is not installed")
+	}
+	if err != nil {
+		f.Fatal(err)
+	}
+	f.Cleanup(func() { _ = node.Close() })
+	f.Fuzz(func(t *testing.T, src string) {
+		if typ, ok := pele.DetectType(src); ok && typ != "info" {
+			t.Skip("not an info diagram")
+		}
+		want, wantErr, err := node.Render(src, oracle.NodeOptions{Now: float64(fixedNow.UnixMilli())})
+		if err != nil {
+			t.Fatalf("node render %q: %v", src, err)
+		}
+		compare(t, "v8", src, optionSets[0].options(nil), want, wantErr)
+	})
+}
