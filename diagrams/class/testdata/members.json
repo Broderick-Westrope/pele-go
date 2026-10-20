@@ -1,0 +1,646 @@
+[
+ {
+  "input": "getTime()",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime()",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTime()",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTime()",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTime()",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTime()",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTime()",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTime()",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTime()",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTime()",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTime()$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime()",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTime()*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime()",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTime(int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTime(int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTime(int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTime(int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTime(int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTime(int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTime(int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTime(int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTime(int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTime(int)$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(int)",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTime(int)*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(int)",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTime(int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTime(int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTime(int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTime(int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTime(int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTime(int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTime(int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTime(int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTime(int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTime(int count)$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(int count)",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTime(int count)*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(int count)",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTime(count int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(count int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTime(count int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTime(count int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTime(count int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTime(count int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTime(count int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTime(count int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTime(count int)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTime(count int)",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTime(count int)$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(count int)",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTime(count int)*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(count int)",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTime(string text, int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(string text, int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTime(string text, int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTime(string text, int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTime(string text, int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTime(string text, int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTime(string text, int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTime(string text, int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTime(string text, int count)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTime(string text, int count)",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTime(string text, int count)$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(string text, int count)",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTime(string text, int count)*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime(string text, int count)",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTime() DateTime",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime() : DateTime",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTime() DateTime",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTime() : DateTime",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTime() DateTime",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTime() : DateTime",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTime() DateTime",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTime() : DateTime",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTime() DateTime",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTime() : DateTime",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTime() DateTime$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime() : DateTime",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTime()  DateTime*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime() : DateTime",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTimes(List~T~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes(List<T>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTimes(List~T~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTimes(List<T>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTimes(List~T~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTimes(List<T>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTimes(List~T~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTimes(List<T>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTimes(List~T~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTimes(List<T>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTimes(List~T~)$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes(List<T>)",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTimes(List~T~)*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes(List<T>)",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTimes(List~T~, List~OT~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes(List<T>, List<OT>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTimes(List~T~, List~OT~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTimes(List<T>, List<OT>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTimes(List~T~, List~OT~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTimes(List<T>, List<OT>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTimes(List~T~, List~OT~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTimes(List<T>, List<OT>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTimes(List~T~, List~OT~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTimes(List<T>, List<OT>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTimes(List~T~, List~OT~)$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes(List<T>, List<OT>)",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTimes(List~T~, List~OT~)*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes(List<T>, List<OT>)",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTimetableList(List~List~T~~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimetableList(List<List<T>>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTimetableList(List~List~T~~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTimetableList(List<List<T>>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTimetableList(List~List~T~~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTimetableList(List<List<T>>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTimetableList(List~List~T~~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTimetableList(List<List<T>>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTimetableList(List~List~T~~)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTimetableList(List<List<T>>)",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTimetableList(List~List~T~~)$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimetableList(List<List<T>>)",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTimetableList(List~List~T~~)*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimetableList(List<List<T>>)",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTimes() List~T~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes() : List<T>",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTimes() List~T~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTimes() : List<T>",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTimes() List~T~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTimes() : List<T>",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTimes() List~T~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTimes() : List<T>",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTimes() List~T~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTimes() : List<T>",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTimes() List~T~$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes() : List<T>",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTimes() List~T~*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimes() : List<T>",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "getTimetableList() List~List~T~~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimetableList() : List<List<T>>",
+  "cssStyle": ""
+ },
+ {
+  "input": "+getTimetableList() List~List~T~~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "+getTimetableList() : List<List<T>>",
+  "cssStyle": ""
+ },
+ {
+  "input": "-getTimetableList() List~List~T~~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-getTimetableList() : List<List<T>>",
+  "cssStyle": ""
+ },
+ {
+  "input": "#getTimetableList() List~List~T~~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#getTimetableList() : List<List<T>>",
+  "cssStyle": ""
+ },
+ {
+  "input": "~getTimetableList() List~List~T~~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "~getTimetableList() : List<List<T>>",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTimetableList() List~List~T~~$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimetableList() : List<List<T>>",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "getTimetableList() List~List~T~~*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTimetableList() : List<List<T>>",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "std::map ~int,string~ pMap;",
+  "type": "attribute",
+  "memberType": "attribute",
+  "displayText": "std::map <int,string> pMap;",
+  "cssStyle": ""
+ },
+ {
+  "input": "getTime~T~(this T, int seconds)$ DateTime",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "getTime<T>(this T, int seconds) : DateTime",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "run)",
+  "type": "method",
+  "memberType": "attribute",
+  "displayText": "run)",
+  "cssStyle": ""
+ },
+ {
+  "input": "a\nfoo(x) int\nb",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "foo(x) : int",
+  "cssStyle": ""
+ },
+ {
+  "input": "foo()\nbar$",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "foo() : bar",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "+x(",
+  "type": "method",
+  "memberType": "attribute",
+  "displayText": "+x(",
+  "cssStyle": ""
+ },
+ {
+  "input": "-(a)",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "-(a)",
+  "cssStyle": ""
+ },
+ {
+  "input": "#é(ü) 😀*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "#é(ü) : 😀",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": " a ",
+  "type": "attribute",
+  "memberType": "attribute",
+  "displayText": "a",
+  "cssStyle": ""
+ },
+ {
+  "input": "*",
+  "type": "attribute",
+  "memberType": "attribute",
+  "displayText": "",
+  "cssStyle": "font-style:italic;"
+ },
+ {
+  "input": "-",
+  "type": "attribute",
+  "memberType": "attribute",
+  "displayText": "-",
+  "cssStyle": ""
+ },
+ {
+  "input": "List~int~ id$",
+  "type": "attribute",
+  "memberType": "attribute",
+  "displayText": "List<int> id",
+  "cssStyle": "text-decoration:underline;"
+ },
+ {
+  "input": "f(List~T~ a)\tMap~K,V~",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "f(List<T> a) : Map<K,V>",
+  "cssStyle": ""
+ },
+ {
+  "input": "(x)",
+  "type": "method",
+  "memberType": "attribute",
+  "displayText": "(x)",
+  "cssStyle": ""
+ },
+ {
+  "input": "a()b*",
+  "type": "method",
+  "memberType": "method",
+  "displayText": "a() : b",
+  "cssStyle": "font-style:italic;"
+ }
+]
