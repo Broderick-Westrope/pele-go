@@ -113,7 +113,7 @@ if errors.As(err, &pe) {
 | `CodeUnsupportedDiagram` | No type detected, or the type isn't registered |
 | `CodeSyntax` | The source doesn't parse |
 | `CodeSemantic` | It parses but asks for something that doesn't exist |
-| `CodeLimit` | Past `Limit`, `OutputLimit` or `MaxEdges`, or nested too deeply |
+| `CodeLimit` | Past `Limit`, `OutputLimit` or `MaxEdges`, or where upstream's JS throws a `RangeError` ("Diagram is nested too deeply.") |
 | `CodeCanceled` | The context was done (Go only, see below) |
 | `CodeInternal` | A panic during the render: a bug, or your `TextMeasurer` or `Icons` panicked (Go only). It wraps a `*pele.PanicError` with the value and stack |
 
@@ -176,12 +176,14 @@ arm64) and how to debug a mismatch.
 - There's no public `parse` or typed model. Render is the API.
 - Public strings are well-formed UTF-8, as described above. Internally the port keeps
   upstream's UTF-16 semantics, including lone surrogates.
-- Go additions: a `context.Context` on `Render` with `CodeCanceled`, `Options.Location` for
-  gantt's time zone, a fixed depth limit (`CodeLimit`, "Diagram is nested too deeply.") in
-  place of a JS stack overflow, and a per-render text-width cache in place of upstream's
-  global one (`forgetTextWidths` is gone). None of these change output, though upstream's
-  overflow point depends on the engine's stack, so sources near the limit can differ in
-  whether they fail.
+- Go additions: a `context.Context` on `Render` with `CodeCanceled`, `CodeInternal` for a
+  recovered panic, `Options.Location` for gantt's time zone, and a per-render text-width
+  cache in place of upstream's global one (`forgetTextWidths` is gone). None of these
+  change output.
+- There is no depth limit. Deeply nested sources render as they do in V8, which walks them
+  without overflowing (checked to 100,000 levels); the port renders them too (tested at
+  20,000). Where upstream's JS throws a `RangeError`, such as
+  `String.fromCodePoint` given a fraction, the port returns the same `CodeLimit` error.
 
 ## Licence
 

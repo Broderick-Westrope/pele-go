@@ -72,10 +72,14 @@ division and `| 0` / `>>` truncate to int32 in JS.
 `rc.Options.Location` (nil means `time.Local`), and reproduce JS `Date` semantics (month
 overflow, `setDate`, DST) in a helper package `internal/jsdate` with tests against V8.
 
-**Recursion:** where upstream recursion could overflow on hostile input, upstream reports
-"Diagram is nested too deeply." (code `limit`). Keep a depth counter (start with 2,000
-levels per recursive function unless upstream bounds it) and call `perr.ThrowRange()` past
-it.
+**Recursion:** upstream walks nested input (subgraphs, blocks, boundaries, groups, JSON)
+without recursion that hostile input can overflow, and V8 renders deep nesting (checked to
+100,000 levels). Don't add a depth counter: there is no fixed depth limit, and
+`TestDeepNestingRenders` checks that 20,000-deep sources render. Go's stacks grow, so a
+port that recurses where upstream does still renders them. Upstream reports every JS `RangeError` as "Diagram is nested
+too deeply." (code `limit`); where a built-in would throw one (for example
+`String.fromCodePoint` given a fraction, `internal/text/entities.go`), call
+`perr.ThrowRange()` and the core reports the same.
 
 **Concurrency:** no mutable package-level state except tables built with `sync.OnceValue`.
 Per-render state goes on the model or `core.Context`.
