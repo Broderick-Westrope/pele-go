@@ -169,46 +169,116 @@ func TestCorpusParity(t *testing.T) {
 		byType[typ] = append(byType[typ], inputs...)
 	}
 	var o *oracle.Oracle
-	var node *oracle.Node
+	nodes := map[string]*oracle.Node{}
 	for _, typ := range slices.Sorted(maps.Keys(byType)) {
 		t.Run(typ, func(t *testing.T) {
 			if !core.Registered(typ) {
 				t.Skip("not registered")
 			}
 			sources := portable(byType[typ])
-			t.Run("goja", func(t *testing.T) {
-				if o == nil {
-					o = newOracle(t)
-				}
-				for _, src := range sources {
-					for _, set := range optionSets {
-						assertParity(t, o, src, set, nil)
-						assertParity(t, o, src, set, lengthMeasurer{})
+			inEachZone(t, typ, func(t *testing.T, zone string) {
+				t.Run("goja", func(t *testing.T) {
+					if o == nil {
+						o = newOracle(t)
 					}
-				}
-			})
-			t.Run("v8", func(t *testing.T) {
-				if node == nil {
-					node = startNode(t)
-				}
-				for _, src := range append(sources, v8Inputs[typ]...) {
-					for _, set := range optionSets {
-						assertParityV8(t, node, src, set, "")
-						assertParityV8(t, node, src, set, "length")
+					loc := setLocal(t, zone)
+					for _, src := range sources {
+						for _, set := range optionSets {
+							assertParity(t, o, src, set.in(loc), nil)
+							assertParity(t, o, src, set.in(loc), lengthMeasurer{})
+						}
 					}
-				}
+				})
+				t.Run("v8", func(t *testing.T) {
+					if nodes[zone] == nil {
+						nodes[zone] = startNodeIn(t, zone)
+					}
+					loc := location(t, zone)
+					for _, src := range append(sources, v8Inputs[typ]...) {
+						for _, set := range optionSets {
+							assertParityV8(t, nodes[zone], src, set.in(loc), "")
+							assertParityV8(t, nodes[zone], src, set.in(loc), "length")
+						}
+					}
+				})
 			})
 		})
 	}
-	if node != nil {
+	for _, node := range nodes {
 		_ = node.Close()
 	}
 }
 
-// startNode starts the V8 oracle, skipping the test when node is not installed.
-func startNode(t testing.TB) *oracle.Node {
+// zonedTypes are the diagram types whose output depends on the local time zone. Their cases
+// run in each of testZones, with goja, Node and the port all in that zone; other types run
+// in the process's own zone.
+var zonedTypes = map[string]bool{"gantt": true}
+
+var testZones = []string{"UTC", "Australia/Sydney"}
+
+// zonesOf returns the zones a type's cases run in: "" alone, the process's own, for a type
+// the zone does not reach.
+func zonesOf(typ string) []string {
+	if zonedTypes[typ] {
+		return testZones
+	}
+	return []string{""}
+}
+
+// inEachZone runs fn in a subtest per zone for a zoned type, and once with zone "" for
+// any other.
+func inEachZone(t *testing.T, typ string, fn func(t *testing.T, zone string)) {
+	if !zonedTypes[typ] {
+		fn(t, "")
+		return
+	}
+	for _, zone := range testZones {
+		t.Run(zone, func(t *testing.T) { fn(t, zone) })
+	}
+}
+
+// location loads zone, or returns nil, the port's default, for "".
+func location(t testing.TB, zone string) *time.Location {
 	t.Helper()
-	node, err := oracle.NewNode()
+	if zone == "" {
+		return nil
+	}
+	loc, err := time.LoadLocation(zone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return loc
+}
+
+// setLocal makes zone time.Local, which goja's Date reads, until the test ends.
+func setLocal(t testing.TB, zone string) *time.Location {
+	t.Helper()
+	loc := location(t, zone)
+	if loc != nil {
+		saved := time.Local
+		time.Local = loc
+		t.Cleanup(func() { time.Local = saved })
+	}
+	return loc
+}
+
+// in returns the option set with the port's time zone set to loc.
+func (set optionSet) in(loc *time.Location) optionSet {
+	apply := set.apply
+	set.apply = func(o *pele.Options) {
+		apply(o)
+		o.Location = loc
+	}
+	return set
+}
+
+// startNode starts the V8 oracle, skipping the test when node is not installed.
+func startNode(t testing.TB) *oracle.Node { t.Helper(); return startNodeIn(t, "") }
+
+// startNodeIn is startNode with node in zone; "" leaves the process's own.
+func startNodeIn(t testing.TB, zone string) *oracle.Node {
+	t.Helper()
+	node, err := oracle.NewNodeIn(zone)
 	if errors.Is(err, exec.ErrNotFound) {
 		t.Skip("node is not installed")
 	}
@@ -281,7 +351,9 @@ func FuzzParity(f *testing.F) {
 		if got, err := o.DetectType(src); err == nil && got != "" && got != typ {
 			t.Skipf("not a %s diagram", typ)
 		}
-		assertParity(t, o, src, optionSets[0], nil)
+		for _, zone := range zonesOf(typ) {
+			assertParity(t, o, src, optionSets[0].in(setLocal(t, zone)), nil)
+		}
 	})
 }
 
@@ -479,13 +551,18 @@ func hasLoneSurrogate(s string) bool {
 func FuzzParityV8(f *testing.F) {
 	typ := fuzzType(f)
 	fuzzSeeds(f, typ, v8Inputs[typ]...)
-	node := startNode(f)
-	f.Cleanup(func() { _ = node.Close() })
+	nodes := map[string]*oracle.Node{}
+	for _, zone := range zonesOf(typ) {
+		nodes[zone] = startNodeIn(f, zone)
+		f.Cleanup(func() { _ = nodes[zone].Close() })
+	}
 	f.Fuzz(func(t *testing.T, src string) {
 		if got, ok := pele.DetectType(src); ok && string(got) != typ {
 			t.Skipf("not a %s diagram", typ)
 		}
-		assertParityV8(t, node, src, optionSets[0], "")
+		for _, zone := range zonesOf(typ) {
+			assertParityV8(t, nodes[zone], src, optionSets[0].in(location(t, zone)), "")
+		}
 	})
 }
 

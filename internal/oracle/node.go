@@ -31,7 +31,11 @@ type NodeOptions struct {
 
 // NewNode starts node with the driver script. It returns exec.ErrNotFound when node is not
 // installed.
-func NewNode() (*Node, error) {
+func NewNode() (*Node, error) { return NewNodeIn("") }
+
+// NewNodeIn is NewNode with node's local time zone set to zone, an IANA name; "" leaves the
+// process's own.
+func NewNodeIn(zone string) (*Node, error) {
 	path, err := exec.LookPath("node")
 	if err != nil {
 		return nil, err
@@ -43,6 +47,9 @@ func NewNode() (*Node, error) {
 	}
 	cmd := exec.Command(path, filepath.Join(dir, "node-oracle.cjs"), filepath.Join(dir, "pele.global.js"))
 	cmd.Stderr = os.Stderr
+	if zone != "" {
+		cmd.Env = append(os.Environ(), "TZ="+zone)
+	}
 	in, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err

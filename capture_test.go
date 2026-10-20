@@ -162,9 +162,12 @@ func number(v any) float64 {
 	return v.(float64)
 }
 
+// captureZone is the time zone the captured calls ran in, which gantt's dates depend on.
+const captureZone = "Australia/Sydney"
+
 func capturedOptions(t *testing.T, rec *jsobj.Object) pele.Options {
 	t.Helper()
-	var opts pele.Options
+	opts := pele.Options{Location: location(t, captureZone)}
 	switch m := get[string](rec, "measurer"); m {
 	case "default", "metrics", "":
 		// Without a canvas upstream's default is the metrics measurer, and so is the port's.
