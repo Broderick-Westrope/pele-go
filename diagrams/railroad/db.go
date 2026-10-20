@@ -1,8 +1,7 @@
 package railroad
 
 import (
-	"strings"
-
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
 )
@@ -27,34 +26,11 @@ func (db *railroadDb) setAccTitle(text string) {
 }
 
 func (db *railroadDb) setAccDescription(text string) {
-	db.accDescr = collapseIndentedBreaks(text)
+	db.accDescr = common.CollapseIndentedBreaks(text)
 }
 
 func (db *railroadDb) addRule(r rule) {
 	db.rules = append(db.rules, r)
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(s) {
-			r, n := jsstr.Decode(s, j)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			j += n
-		}
-		b.WriteByte('\n')
-		i = max(j, i+1)
-	}
-	return b.String()
 }
 
 // notationOf is /^\s*railroad-(ebnf-|abnf-|peg-)?beta/i: Mermaid has a detector per

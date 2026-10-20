@@ -2,14 +2,14 @@
 package info
 
 import (
-	"strings"
+	"math"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/svg"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
-	"math"
 )
 
 // upstreamVersion is the Pele release this port matches, which the diagram shows.
@@ -42,37 +42,9 @@ func buildInfo(a ast, title *string) model {
 		m.accTitle = jsstr.TrimStart(*a.accTitle)
 	}
 	if a.accDescr != nil && *a.accDescr != "" {
-		m.accDescr = collapseIndentedBreaks(*a.accDescr)
+		m.accDescr = common.CollapseIndentedBreaks(*a.accDescr)
 	}
 	return m
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(s) {
-			r, n := jsstr.Decode(s, j)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			j += n
-		}
-		if j > i+1 {
-			b.WriteByte('\n')
-			i = j
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-	}
-	return b.String()
 }
 
 func renderInfo(m model, rc *core.Context) core.Rendered {

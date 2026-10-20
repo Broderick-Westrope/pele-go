@@ -237,7 +237,7 @@ func buildEventModel(a eventModelAst, title *string) *eventModelingModel {
 		m.accTitle = jsstr.TrimStart(common.AccTitleValue(*a.accTitle))
 	}
 	if a.accDescr != nil {
-		m.accDescr = collapseIndentedBreaks(common.AccDescrValue(*a.accDescr))
+		m.accDescr = common.CollapseIndentedBreaks(common.AccDescrValue(*a.accDescr))
 	}
 	for _, l := range laneOf.All() {
 		m.lanes = append(m.lanes, l)
@@ -256,27 +256,4 @@ func buildEventModel(a eventModelAst, title *string) *eventModelingModel {
 	}
 	m.entities = a.modelEntities
 	return m
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(s) {
-			r, n := jsstr.Decode(s, j)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			j += n
-		}
-		b.WriteByte('\n')
-		i = j
-	}
-	return b.String()
 }

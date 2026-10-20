@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
@@ -50,7 +51,7 @@ func (db *journeyDb) setAccTitle(text string) {
 }
 
 func (db *journeyDb) setAccDescription(text string) {
-	db.accDescr = collapseIndentedBreaks(text)
+	db.accDescr = common.CollapseIndentedBreaks(text)
 }
 
 func (db *journeyDb) addSection(text string) {
@@ -69,26 +70,4 @@ func (db *journeyDb) addTask(task, data string) {
 		}
 	}
 	db.tasks = append(db.tasks, journeyTask{task: task, score: jsnum.Parse(pieces[0]), people: people, section: db.currentSection})
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
 }

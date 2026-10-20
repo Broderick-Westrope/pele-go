@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
@@ -312,30 +313,7 @@ func (db *classDb) setAccTitle(s string) {
 }
 
 func (db *classDb) setAccDescription(s string) {
-	db.accDescr = collapseIndentedBreaks(s)
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(s) {
-			r, n := jsstr.Decode(s, j)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			j += n
-		}
-		b.WriteByte('\n')
-		i = j
-	}
-	return b.String()
+	db.accDescr = common.CollapseIndentedBreaks(s)
 }
 
 func (db *classDb) addNamespace(id, label string) string {

@@ -204,3 +204,24 @@ func TestCases(t *testing.T) {
 		},
 	})
 }
+
+func TestCollapseIndentedBreaks(t *testing.T) {
+	tests := map[string]struct {
+		in, want string
+	}{
+		"indented lines":       {in: "a\n   b\n\tc", want: "a\nb\nc"},
+		"blank lines collapse": {in: "a\n\n\n  b", want: "a\nb"},
+		"unicode space":        {in: "a\n\u3000\u2028b", want: "a\nb"},
+		"trailing break":       {in: "a\n", want: "a\n"},
+		"no break":             {in: "  a  ", want: "  a  "},
+		"lone surrogate kept":  {in: "a\n\xed\xa0\x80", want: "a\n\xed\xa0\x80"},
+		"space before break":   {in: "a  \n b", want: "a  \nb"},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := common.CollapseIndentedBreaks(tc.in); got != tc.want {
+				t.Errorf("CollapseIndentedBreaks(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}

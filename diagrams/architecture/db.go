@@ -2,8 +2,8 @@ package architecture
 
 import (
 	"strconv"
-	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
@@ -140,7 +140,7 @@ func (db *architectureDb) addLayoutHint(hint archLayoutHint) {
 // alignments.
 func populate(a architectureAst, db *architectureDb) {
 	if a.accDescr != "" {
-		db.accDescr = collapseIndentedBreaks(a.accDescr)
+		db.accDescr = common.CollapseIndentedBreaks(a.accDescr)
 	}
 	if a.accTitle != "" {
 		db.accTitle = jsstr.TrimStart(a.accTitle)
@@ -163,26 +163,4 @@ func populate(a architectureAst, db *architectureDb) {
 	for _, al := range a.alignments {
 		db.addLayoutHint(archLayoutHint{direction: al.direction, members: append([]string(nil), al.members...)})
 	}
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
 }

@@ -3,6 +3,7 @@ package quadrant
 import (
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
@@ -169,29 +170,6 @@ func (db *quadrantDb) setAccTitle(text string) {
 }
 
 func (db *quadrantDb) setAccDescription(text string) {
-	s := collapseIndentedBreaks(text)
+	s := common.CollapseIndentedBreaks(text)
 	db.accDescr = &s
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(s) {
-			r, n := jsstr.Decode(s, j)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			j += n
-		}
-		b.WriteByte('\n')
-		i = j
-	}
-	return b.String()
 }

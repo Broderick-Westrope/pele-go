@@ -7,7 +7,6 @@ import (
 
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
-	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
 )
@@ -775,24 +774,6 @@ func resolveUsecase(src common.Src, d *drafts, title string) *usecaseModel {
 	}
 	model.title = title
 	model.accTitle = d.accTitle
-	model.accDescr = collapseIndentedBreaks(d.accDescription)
+	model.accDescr = common.CollapseIndentedBreaks(d.accDescription)
 	return model
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	units := jsstr.UTF16(s)
-	out := make([]uint16, 0, len(units))
-	for i := 0; i < len(units); i++ {
-		out = append(out, units[i])
-		if units[i] != '\n' {
-			continue
-		}
-		j := i + 1
-		for j < len(units) && jsstr.IsSpace(rune(units[j])) {
-			j++
-		}
-		i = j - 1
-	}
-	return jsstr.FromUTF16(out)
 }

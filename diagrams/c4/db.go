@@ -2,10 +2,9 @@ package c4
 
 import (
 	"math"
-	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
-	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 )
 
 // field returns the element field a name sets, or nil for one it has no field for. label
@@ -175,29 +174,7 @@ func (db *c4Db) setC4Type(typ string) { db.c4Type = typ }
 func (db *c4Db) setTitle(title string) { db.title = title }
 
 func (db *c4Db) setAccDescription(descr string) {
-	db.accDescr = collapseIndentedBreaks(descr)
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
+	db.accDescr = common.CollapseIndentedBreaks(descr)
 }
 
 func (db *c4Db) element(list *[]*element, index map[string]*element, alias attr, title *attr) *element {

@@ -3,6 +3,7 @@ package wardley
 import (
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
@@ -227,30 +228,7 @@ func buildWardley(ast wardleyAst, title *string) wardleyModel {
 		m.accTitle = jsstr.TrimStart(*ast.accTitle)
 	}
 	if ast.accDescr != nil && *ast.accDescr != "" {
-		m.accDescr = collapseIndentedBreaks(*ast.accDescr)
+		m.accDescr = common.CollapseIndentedBreaks(*ast.accDescr)
 	}
 	return m
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(s) {
-			r, n := jsstr.Decode(s, j)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			j += n
-		}
-		b.WriteByte('\n')
-		i = j
-	}
-	return b.String()
 }

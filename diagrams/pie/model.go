@@ -1,8 +1,7 @@
 package pie
 
 import (
-	"strings"
-
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
@@ -39,29 +38,7 @@ func buildPie(a ast, title *string) model {
 		m.accTitle = jsstr.TrimStart(*a.accTitle)
 	}
 	if a.accDescr != nil && *a.accDescr != "" {
-		m.accDescr = collapseIndentedBreaks(*a.accDescr)
+		m.accDescr = common.CollapseIndentedBreaks(*a.accDescr)
 	}
 	return m
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
 }

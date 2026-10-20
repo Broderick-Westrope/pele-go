@@ -1,8 +1,7 @@
 package timeline
 
 import (
-	"strings"
-
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
 )
@@ -40,7 +39,7 @@ func (db *timelineDb) setAccTitle(text string) {
 }
 
 func (db *timelineDb) setAccDescription(text string) {
-	db.accDescr = collapseIndentedBreaks(text)
+	db.accDescr = common.CollapseIndentedBreaks(text)
 }
 
 func (db *timelineDb) setDirection(direction string) {
@@ -74,26 +73,4 @@ func (db *timelineDb) addEvent(event string) {
 	}
 	period := db.periods[len(db.periods)-1]
 	period.events = append(period.events, event)
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
 }

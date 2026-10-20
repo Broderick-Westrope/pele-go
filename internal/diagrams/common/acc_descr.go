@@ -1,5 +1,11 @@
 package common
 
+import (
+	"strings"
+
+	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
+)
+
 // accDescrHead is /[\t ]*accDescr(?:[\t ]*:(?:[^\n\r]*?(?=%%)|[^\n\r]*)|\s*({))/y. It
 // returns the end of the match, whether it is the braced form, or -1.
 func accDescrHead(src Src, at int) (int, bool) {
@@ -47,4 +53,27 @@ func AccDescrScanner(name string) *TokenType {
 			return close + 1
 		}
 	}}
+}
+
+// CollapseIndentedBreaks is s.replace(/\n\s+/g, '\n'), which every diagram applies to its
+// accessible description.
+func CollapseIndentedBreaks(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); {
+		if s[i] != '\n' {
+			b.WriteByte(s[i])
+			i++
+			continue
+		}
+		b.WriteByte('\n')
+		i++
+		for i < len(s) {
+			r, n := jsstr.Decode(s, i)
+			if !jsstr.IsSpace(r) {
+				break
+			}
+			i += n
+		}
+	}
+	return b.String()
 }

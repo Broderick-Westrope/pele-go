@@ -3,6 +3,7 @@ package treeview
 import (
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
 )
@@ -136,29 +137,7 @@ func buildTreeView(ast treeViewAst, title *string) treeViewModel {
 		m.accTitle = jsstr.TrimStart(*ast.accTitle)
 	}
 	if ast.accDescr != nil && *ast.accDescr != "" {
-		m.accDescr = collapseIndentedBreaks(*ast.accDescr)
+		m.accDescr = common.CollapseIndentedBreaks(*ast.accDescr)
 	}
 	return m
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
 }

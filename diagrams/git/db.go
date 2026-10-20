@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
@@ -381,7 +382,7 @@ func buildGit(a gitGraphAst, config *jsobj.Object, title *string) *gitModel {
 		m.accTitle = jsstr.TrimStart(*a.accTitle)
 	}
 	if a.accDescr != nil && *a.accDescr != "" {
-		m.accDescr = collapseIndentedBreaks(*a.accDescr)
+		m.accDescr = common.CollapseIndentedBreaks(*a.accDescr)
 	}
 	return m
 }
@@ -435,27 +436,4 @@ func jsSort[T any](items []T, compare func(a, b T) float64) {
 		copy(items[left+1:start+1], items[left:start])
 		items[left] = pivot
 	}
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(s) {
-			r, n := jsstr.Decode(s, j)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			j += n
-		}
-		b.WriteByte('\n')
-		i = j
-	}
-	return b.String()
 }

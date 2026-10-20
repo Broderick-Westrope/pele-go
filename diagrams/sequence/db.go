@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsjson"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
@@ -181,28 +182,7 @@ func (db *seqDb) setAccTitle(text string) {
 }
 
 func (db *seqDb) setAccDescription(text string) {
-	db.accDescr = collapseIndentedBreaks(text)
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		b.WriteByte(s[i])
-		if s[i] != '\n' {
-			i++
-			continue
-		}
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
+	db.accDescr = common.CollapseIndentedBreaks(text)
 }
 
 func (db *seqDb) setDiagramTitle(text string) {

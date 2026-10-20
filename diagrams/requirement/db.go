@@ -3,6 +3,7 @@ package requirement
 import (
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
@@ -222,27 +223,5 @@ func (db *requirementDb) setAccTitle(text string) {
 }
 
 func (db *requirementDb) setAccDescription(text string) {
-	db.accDescr = collapseIndentedBreaks(text)
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
+	db.accDescr = common.CollapseIndentedBreaks(text)
 }

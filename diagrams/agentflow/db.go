@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/flowchart"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
@@ -716,30 +717,8 @@ func (db *agentflowDb) setAccTitle(text string) {
 }
 
 func (db *agentflowDb) setAccDescription(text string) {
-	v := collapseIndentedBreaks(text)
+	v := common.CollapseIndentedBreaks(text)
 	db.accDescr = &v
-}
-
-// collapseIndentedBreaks is s.replace(/\n\s+/g, '\n').
-func collapseIndentedBreaks(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		if s[i] != '\n' {
-			b.WriteByte(s[i])
-			i++
-			continue
-		}
-		b.WriteByte('\n')
-		i++
-		for i < len(s) {
-			r, n := jsstr.Decode(s, i)
-			if !jsstr.IsSpace(r) {
-				break
-			}
-			i += n
-		}
-	}
-	return b.String()
 }
 
 // addSubGraph adds a flow and returns its id. idText and titleText are nil when not given;
