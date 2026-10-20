@@ -273,15 +273,12 @@ var reContinuation = regexp.MustCompile(`\\\n[ \t]*`)
 
 func unquoteDouble(body string) string {
 	// Escapes are read by UTF-16 code unit: \x, \u and \U take that many units after them.
+	// The result is built in code units too, so \uD83D\uDE00 makes one character, as in JS.
 	s := jsstr.UTF16(fold(reContinuation.ReplaceAllString(body, "")))
-	var out strings.Builder
+	out := make([]uint16, 0, len(s))
 	for i := 0; i < len(s); i++ {
 		if s[i] != '\\' {
-			start := i
-			for i+1 < len(s) && s[i+1] != '\\' {
-				i++
-			}
-			out.WriteString(jsstr.FromUTF16(s[start : i+1]))
+			out = append(out, s[i])
 			continue
 		}
 		i++
@@ -292,15 +289,15 @@ func unquoteDouble(body string) string {
 		if i < len(s) && (e == 'x' || e == 'u' || e == 'U') {
 			n := map[uint16]int{'x': 2, 'u': 4, 'U': 8}[e]
 			digits := s[i+1 : min(len(s), i+1+n)]
-			out.WriteString(fromCodePoint(parseHexPrefix(digits)))
+			out = append(out, utf16Of(fromCodePoint(parseHexPrefix(digits)))...)
 			i += n
 		} else if esc, ok := escapes[e]; ok && i < len(s) {
-			out.WriteString(esc)
+			out = append(out, jsstr.UTF16(esc)...)
 		} else {
 			fail("YAML: unknown escape sequence")
 		}
 	}
-	return out.String()
+	return jsstr.FromUTF16(out)
 }
 
 // parseHexPrefix is parseInt(s, 16): the hex digits at the start of s, or NaN as -1.
@@ -326,13 +323,13 @@ func parseHexPrefix(units []uint16) float64 {
 	return sign * jsnum.Parse("0x"+text[:end])
 }
 
-// fromCodePoint is String.fromCodePoint, which throws a RangeError for anything but an
-// integer code point.
-func fromCodePoint(n float64) string {
+// fromCodePoint checks n as String.fromCodePoint does, which throws a RangeError for
+// anything but an integer code point.
+func fromCodePoint(n float64) rune {
 	if n != n || n < 0 || n > 0x10ffff || n != float64(int64(n)) {
 		fail("Invalid code point " + jsnum.Format(n))
 	}
-	return jsstr.FromUTF16(utf16Of(rune(n)))
+	return rune(n)
 }
 
 func utf16Of(r rune) []uint16 {

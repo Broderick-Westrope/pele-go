@@ -269,6 +269,7 @@ func Render(ctx context.Context, source string, opts Options) (res Result, err e
 		}
 		switch e := r.(type) {
 		case *perr.Error:
+			e.Message, e.Snippet = jsstr.Canonical(e.Message), jsstr.Canonical(e.Snippet)
 			err = e
 		case perr.RangeError:
 			err = perr.New("Diagram is nested too deeply.", perr.Limit)
@@ -312,8 +313,12 @@ func Render(ctx context.Context, source string, opts Options) (res Result, err e
 		e.Type, e.MermaidType = p.Type, p.MermaidType
 		return Result{}, e
 	}
+	// Output is joined from many strings; a surrogate pair split across two of them is
+	// written as the one character JS would have.
+	rendered.SVG = jsstr.Canonical(rendered.SVG)
 	for i := range rendered.Links {
-		rendered.Links[i].ID = text.DecodeEntities(rendered.Links[i].ID)
+		rendered.Links[i].ID = jsstr.Canonical(text.DecodeEntities(rendered.Links[i].ID))
+		rendered.Links[i].Href = jsstr.Canonical(rendered.Links[i].Href)
 	}
 	if rendered.Links == nil {
 		rendered.Links = []Link{}

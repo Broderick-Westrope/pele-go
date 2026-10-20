@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -117,11 +118,10 @@ func TestInfoParity(t *testing.T) {
 	o := newOracle(t)
 	inputs := append(corpus(t, "info-docs.json"), infoInputs...)
 	for _, src := range inputs {
-		if hasLoneSurrogate(src) {
-			t.Fatalf("input %q has a lone surrogate, which goja cannot judge", src)
+		for _, set := range optionSets {
+			assertParity(t, o, src, set, nil)
+			assertParity(t, o, src, set, lengthMeasurer{})
 		}
-		assertParity(t, o, src, nil)
-		assertParity(t, o, src, lengthMeasurer{})
 	}
 }
 
@@ -166,22 +166,66 @@ func FuzzInfoParity(f *testing.F) {
 	}
 	o := newOracle(f)
 	f.Fuzz(func(t *testing.T, src string) {
-		if hasLoneSurrogate(src) {
-			// goja turns lone surrogates into U+FFFD in some string operations where V8
-			// keeps them, which changes measured widths, so it cannot judge these sources.
-			t.Skip("goja does not keep lone surrogates")
-		}
 		if typ, err := o.DetectType(src); err == nil && typ != "" && typ != "info" {
 			t.Skip("not an info diagram")
 		}
-		assertParity(t, o, src, nil)
+		assertParity(t, o, src, optionSets[0], nil)
 	})
 }
 
-func assertParity(t *testing.T, o *oracle.Oracle, src string, m pele.TextMeasurer) {
-	t.Helper()
+// optionSet is one set of render options, as Go options and as the JS object that means
+// the same.
+type optionSet struct {
+	name  string
+	js    map[string]any
+	apply func(*pele.Options)
+}
+
+func ptr[T any](v T) *T { return &v }
+
+var optionSets = []optionSet{
+	{name: "defaults", apply: func(*pele.Options) {}},
+	{
+		name: "sized",
+		js:   map[string]any{"fontSize": 13.5, "padding": 3, "idPrefix": `d1 "x"`},
+		apply: func(o *pele.Options) {
+			o.FontSize, o.Padding, o.IDPrefix = ptr(13.5), ptr(3.0), ptr(`d1 "x"`)
+		},
+	},
+	{
+		name: "fixed fonts",
+		js:   map[string]any{"responsive": false, "fontFamily": `Inter, "Helvetica Neue", sans-serif`, "fontFamilyMono": "bad;}"},
+		apply: func(o *pele.Options) {
+			o.Responsive, o.FontFamily, o.FontFamilyMono = ptr(false), ptr(`Inter, "Helvetica Neue", sans-serif`), ptr("bad;}")
+		},
+	},
+	{
+		name:  "zeroes",
+		js:    map[string]any{"padding": 0, "fontSize": 0, "idPrefix": ""},
+		apply: func(o *pele.Options) { o.Padding, o.FontSize, o.IDPrefix = ptr(0.0), ptr(0.0), ptr("") },
+	},
+	{
+		name:  "limits",
+		js:    map[string]any{"limit": 12, "outputLimit": 1600},
+		apply: func(o *pele.Options) { o.Limit, o.OutputLimit = ptr(12), ptr(1600) },
+	},
+}
+
+func (set optionSet) options(m pele.TextMeasurer) pele.Options {
 	opts := pele.Options{Measurer: m, Now: fixedNow}
-	jsOpts := oracle.Options{Now: fixedNow}
+	set.apply(&opts)
+	return opts
+}
+
+// assertParity compares the port with Pele in goja for one source and option set. goja
+// turns lone surrogates into U+FFFD in some string operations where V8 keeps them, so a
+// case whose output holds one, from the source or from an escape, is left to the V8 test.
+func assertParity(t *testing.T, o *oracle.Oracle, src string, set optionSet, m pele.TextMeasurer) {
+	t.Helper()
+	if hasLoneSurrogate(src) || outputHasLoneSurrogate(src, set.options(m)) {
+		return
+	}
+	jsOpts := oracle.Options{Now: fixedNow, Extra: set.js}
 	if m != nil {
 		jsOpts.Measurer = jsMeasurer{m}
 	}
@@ -189,6 +233,13 @@ func assertParity(t *testing.T, o *oracle.Oracle, src string, m pele.TextMeasure
 	if err != nil {
 		t.Fatalf("oracle render %q: %v", src, err)
 	}
+	compare(t, "goja/"+set.name, src, set.options(m), want, wantErr)
+}
+
+// compare renders src with the port and checks both the lossless and the public results
+// against what upstream returned.
+func compare(t *testing.T, label, src string, opts pele.Options, want *oracle.Result, wantErr *oracle.Error) {
+	t.Helper()
 	lossless, gotErr := core.Render(context.Background(), src, opts)
 	public, publicErr := pele.Render(context.Background(), src, opts)
 
@@ -196,7 +247,7 @@ func assertParity(t *testing.T, o *oracle.Oracle, src string, m pele.TextMeasure
 		for name, got := range map[string]error{"lossless": gotErr, "public": publicErr} {
 			var pe *pele.Error
 			if !errors.As(got, &pe) {
-				t.Errorf("render %q (%s): got error %v, want PeleError %+v", src, name, got, *wantErr)
+				t.Errorf("%s: render %q (%s): got error %v, want PeleError %+v", label, src, name, got, *wantErr)
 				return
 			}
 			want := *wantErr
@@ -208,34 +259,85 @@ func assertParity(t *testing.T, o *oracle.Oracle, src string, m pele.TextMeasure
 				want.Message, want.Snippet = jsstr.WellFormed(want.Message), jsstr.WellFormed(want.Snippet)
 			}
 			if gotFields != want {
-				t.Errorf("render %q (%s) error:\n got %+v\nwant %+v", src, name, gotFields, want)
+				t.Errorf("%s: render %q (%s) error:\n got %+v\nwant %+v", label, src, name, gotFields, want)
 			}
 		}
 		return
 	}
 	if gotErr != nil || publicErr != nil {
-		t.Errorf("render %q: got errors %v / %v, want success", src, gotErr, publicErr)
+		t.Errorf("%s: render %q: got errors %v / %v, want success", label, src, gotErr, publicErr)
 		return
 	}
 	if lossless.SVG != want.SVG {
-		t.Errorf("render %q SVG (lossless):\n got %s\nwant %s", src, lossless.SVG, want.SVG)
+		t.Errorf("%s: render %q SVG (lossless):\n got %q\nwant %q", label, src, lossless.SVG, want.SVG)
 	}
 	if public.SVG != jsstr.WellFormed(want.SVG) {
-		t.Errorf("render %q SVG (public):\n got %s\nwant %s", src, public.SVG, jsstr.WellFormed(want.SVG))
+		t.Errorf("%s: render %q SVG (public):\n got %s\nwant %s", label, src, public.SVG, jsstr.WellFormed(want.SVG))
 	}
 	if public.Width != want.Width || public.Height != want.Height {
-		t.Errorf("render %q size = %vx%v, want %vx%v", src, public.Width, public.Height, want.Width, want.Height)
+		t.Errorf("%s: render %q size = %vx%v, want %vx%v", label, src, public.Width, public.Height, want.Width, want.Height)
 	}
 	if string(public.Type) != want.Type || public.MermaidType != want.MermaidType {
-		t.Errorf("render %q type = %s/%s, want %s/%s", src, public.Type, public.MermaidType, want.Type, want.MermaidType)
+		t.Errorf("%s: render %q type = %s/%s, want %s/%s", label, src, public.Type, public.MermaidType, want.Type, want.MermaidType)
 	}
 	gotLinks := make([]oracle.Link, len(public.Links))
 	for i, l := range public.Links {
 		gotLinks[i] = oracle.Link{ID: l.ID, Href: l.Href, Internal: l.Internal}
 	}
 	if !slices.Equal(gotLinks, want.Links) {
-		t.Errorf("render %q links = %+v, want %+v", src, gotLinks, want.Links)
+		t.Errorf("%s: render %q links = %+v, want %+v", label, src, gotLinks, want.Links)
 	}
+}
+
+// loneSurrogateInputs carry lone surrogates into the output, directly or through YAML
+// escapes. goja cannot judge them; V8 can.
+var loneSurrogateInputs = []string{
+	"info\ntitle a" + jsstr.FromUTF16([]uint16{0xd83d}),
+	"info\ntitle " + jsstr.FromUTF16([]uint16{0xdf82}) + " low",
+	"info\naccTitle: " + jsstr.FromUTF16([]uint16{0xdc00, 'x', 0xd800}),
+	"info" + jsstr.FromUTF16([]uint16{0xdb78}),
+	"---\ntitle: \"\\uD83D lone\"\n---\ninfo",
+	"---\ntitle: \"\\uD83D\\uDE00 pair\"\n---\ninfo",
+	"info\ntitle " + strings.Repeat("lone "+jsstr.FromUTF16([]uint16{0xdc01})+" ", 300),
+}
+
+// TestInfoParityV8 checks the port against Pele in Node, which keeps lone surrogates where
+// goja does not, across the option sets and both measurers the driver knows.
+func TestInfoParityV8(t *testing.T) {
+	node, err := oracle.NewNode()
+	if errors.Is(err, exec.ErrNotFound) {
+		t.Skip("node is not installed")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer node.Close()
+	inputs := append(append(corpus(t, "info-docs.json"), infoInputs...), loneSurrogateInputs...)
+	for _, src := range inputs {
+		for _, set := range optionSets {
+			for _, measurer := range []string{"", "length"} {
+				want, wantErr, err := node.Render(src, oracle.NodeOptions{
+					Options: set.js, Measurer: measurer, Now: float64(fixedNow.UnixMilli()),
+				})
+				if err != nil {
+					t.Fatalf("node render %q: %v", src, err)
+				}
+				var m pele.TextMeasurer
+				if measurer == "length" {
+					m = lengthMeasurer{}
+				}
+				compare(t, "v8/"+set.name+"/"+measurer, src, set.options(m), want, wantErr)
+			}
+		}
+	}
+}
+
+func outputHasLoneSurrogate(src string, opts pele.Options) bool {
+	res, err := core.Render(context.Background(), src, opts)
+	if pe := (*pele.Error)(nil); errors.As(err, &pe) {
+		return hasLoneSurrogate(pe.Message) || hasLoneSurrogate(pe.Snippet)
+	}
+	return hasLoneSurrogate(res.SVG)
 }
 
 func hasLoneSurrogate(s string) bool {

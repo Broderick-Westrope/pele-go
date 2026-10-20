@@ -133,3 +133,13 @@ func TestSliceCountsCodeUnits(t *testing.T) {
 		})
 	}
 }
+
+func TestCanonicalPairsAdjacentSurrogates(t *testing.T) {
+	joined := jsstr.FromUTF16([]uint16{'a', 0xd83d}) + jsstr.FromUTF16([]uint16{0xde00, 'b'})
+	if got, want := jsstr.Canonical(joined), "a\U0001F600b"; got != want {
+		t.Fatalf("Canonical = %q, want %q", got, want)
+	}
+	if got, want := jsstr.WellFormed(joined), "a\U0001F600b"; got != want {
+		t.Fatalf("WellFormed = %q, want %q", got, want)
+	}
+}

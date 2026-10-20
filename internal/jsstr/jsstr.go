@@ -4,6 +4,10 @@
 // the three bytes UTF-8 would use for its code point. JavaScript strings are UTF-16 and can
 // hold lone surrogates, so this keeps every JS string representable and makes conversions in
 // both directions lossless.
+//
+// Joining two WTF-8 strings can leave a high and a low surrogate next to each other, each
+// encoded on its own, where JS would have one character. UTF16 and Len read such a run as
+// the pair JS has; Canonical rewrites it as the one character, as output must be.
 package jsstr
 
 import (
@@ -113,9 +117,29 @@ func Len(s string) int {
 	return n
 }
 
+// hasSurrogate reports whether s holds an encoded surrogate, paired or not.
+func hasSurrogate(s string) bool {
+	for i := 0; i+1 < len(s); i++ {
+		if s[i] == 0xed && s[i+1] >= 0xa0 && s[i+1] <= 0xbf {
+			return true
+		}
+	}
+	return false
+}
+
+// Canonical returns s with each high surrogate that is followed by a low one written as the
+// character they make, as JS reads them.
+func Canonical(s string) string {
+	if !hasSurrogate(s) {
+		return s
+	}
+	return FromUTF16(UTF16(s))
+}
+
 // WellFormed returns s with each lone surrogate replaced by U+FFFD, as encoding a JS string
 // as UTF-8 does.
 func WellFormed(s string) string {
+	s = Canonical(s)
 	for i := 0; i < len(s); {
 		r, n := Decode(s, i)
 		if isSurrogate(r) {

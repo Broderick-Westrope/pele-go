@@ -3,10 +3,12 @@ package pele_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"unicode/utf8"
 
 	pele "github.com/Broderick-Westrope/pele-go"
+	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 )
 
@@ -57,5 +59,25 @@ func TestRenderIsSafeForConcurrentUse(t *testing.T) {
 	}
 	for range 8 {
 		<-done
+	}
+}
+
+func TestEscapedSurrogatePairsBecomeOneCharacter(t *testing.T) {
+	res, err := pele.Render(context.Background(), "---\ntitle: \"\\uD83D\\uDE00 smile\"\n---\ninfo", pele.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(res.SVG, "\U0001F600 smile") {
+		t.Fatalf("SVG does not contain the emoji: %s", res.SVG)
+	}
+}
+
+func TestLosslessOutputPairsEscapedSurrogates(t *testing.T) {
+	res, err := core.Render(context.Background(), "---\ntitle: \"\\uD83D\\uDE00 smile\"\n---\ninfo", pele.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(res.SVG, "\U0001F600 smile") {
+		t.Fatalf("SVG does not contain the emoji: %q", res.SVG)
 	}
 }
