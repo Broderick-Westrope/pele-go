@@ -87,7 +87,7 @@ func (db *architectureDb) addJunction(j junctionAst) {
 
 func (db *architectureDb) addGroup(g groupAst) {
 	db.register("group", g.id, g.in)
-	db.groups.Set(g.id, archGroup{id: g.id, icon: g.icon, title: g.title, in: g.in})
+	db.groups.Set(g.id, archGroup(g))
 }
 
 func (db *architectureDb) addEdge(e archEdge) {

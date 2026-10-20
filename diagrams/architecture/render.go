@@ -312,7 +312,7 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 	if options.Padding != nil {
 		pad = *options.Padding
 	}
-	half := iconSize / 2
+	half := float64(iconSize / 2)
 
 	var nodes []archNode
 	for _, node := range model.nodes.All() {
@@ -548,14 +548,14 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 	right := func(g int) float64 { return X[c1[g]] + colW[c1[g]] + insR[g] }
 	top := func(g int) float64 { return Y[r0[g]] - insT[g] }
 	bottom := func(g int) float64 { return Y[r1[g]] + rowH[r1[g]] + insB[g] }
-	centerX := func(i int) float64 { return X[nodeCol[i]] + colW[nodeCol[i]]/2 }
+	centerX := func(i int) float64 { return X[nodeCol[i]] + float64(colW[nodeCol[i]]/2) }
 
 	portOf := func(i, side int, viaGroup bool) port {
 		dx := sideDX[side]
 		dy := sideDY[side]
 		cx := centerX(i)
 		y := Y[nodeRow[i]]
-		p := port{x: cx, y: y + half, dx: dx, dy: dy, x0: cx - boxW[i]/2, y0: y, x1: cx + boxW[i]/2, y1: y + boxH[i]}
+		p := port{x: cx, y: y + half, dx: dx, dy: dy, x0: cx - float64(boxW[i]/2), y0: y, x1: cx + float64(boxW[i]/2), y1: y + boxH[i]}
 		switch {
 		case nodes[i].junction:
 			p.x0, p.x1 = cx, cx
@@ -674,28 +674,30 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 			x := (points[at] + points[at+2]) / 2
 			y := (points[at+1] + points[at+3]) / 2
 			w := label.Width + 8
+			halfW := float64(w / 2)
+			halfH := float64(label.Height / 2)
 			upright := math.Abs(points[at]-points[at+2]) < 0.01
 			// On a short run next to a node the label would land on the node, so it moves off to
 			// the side.
 			for _, p := range [2]port{s, e} {
-				if x+w/2 <= p.x0 || x-w/2 >= p.x1 || y+label.Height/2 <= p.y0 || y-label.Height/2 >= p.y1 {
+				if x+halfW <= p.x0 || x-halfW >= p.x1 || y+halfH <= p.y0 || y-halfH >= p.y1 {
 					continue
 				}
 				switch {
 				case upright && x >= (p.x0+p.x1)/2:
-					x = p.x1 + w/2 + 4
+					x = p.x1 + halfW + 4
 				case upright:
-					x = p.x0 - w/2 - 4
+					x = p.x0 - halfW - 4
 				case y >= (p.y0+p.y1)/2:
-					y = p.y1 + label.Height/2 + 4
+					y = p.y1 + halfH + 4
 				default:
-					y = p.y0 - label.Height/2 - 4
+					y = p.y0 - halfH - 4
 				}
 			}
-			minX = min(minX, x-w/2)
-			maxX = max(maxX, x+w/2)
-			minY = min(minY, y-label.Height/2)
-			maxY = max(maxY, y+label.Height/2)
+			minX = min(minX, x-halfW)
+			maxX = max(maxX, x+halfW)
+			minY = min(minY, y-halfH)
+			maxY = max(maxY, y+halfH)
 			labelsOut += svg.EdgeLabelSVG(edge.lhsID+"-"+edge.rhsID, label, x, y, "", icons)
 		}
 	}
@@ -728,13 +730,13 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 			if start+headW[g] > x+w-4 {
 				start = x + 10
 			}
-			cy := y + 6 + headH[g]/2
+			cy := y + 6 + float64(headH[g]/2)
 			textX := start
 			if group.icon != "" {
-				head += iconSlot(group.icon, start, cy-badge/2, badge, icons)
+				head += iconSlot(group.icon, start, cy-float64(badge/2), badge, icons)
 				textX += badge + 6
 			}
-			head += svg.LabelSVG(label, textX+label.Width/2, cy, ` class="pele-cluster-label" fill="var(--_m)"`, icons)
+			head += svg.LabelSVG(label, textX+float64(label.Width/2), cy, ` class="pele-cluster-label" fill="var(--_m)"`, icons)
 		}
 		clusters += `<g class="pele-cluster" data-id="` + svg.EscText(group.id) + `">` +
 			`<rect x="` + svg.Num(x) + `" y="` + svg.Num(y) + `" width="` + svg.Num(w) + `" height="` + svg.Num(bottom(g)-y) +
@@ -744,7 +746,7 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 	}
 
 	nodesOut := ""
-	glyph := iconSize * 0.5
+	glyph := float64(iconSize * 0.5)
 	textSize := max(6, jsmath.Round(size*0.75))
 	for i, node := range nodes {
 		at := `data-id="` + svg.EscText(node.id) + `" transform="translate(` + svg.Num(centerX(i)) + "," + svg.Num(Y[nodeRow[i]]) + `)"`
@@ -754,7 +756,7 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 		}
 		inner := ""
 		if node.icon != "" {
-			inner = iconSlot(node.icon, -glyph/2, (iconSize-glyph)/2, glyph, icons)
+			inner = iconSlot(node.icon, float64(-glyph/2), float64((iconSize-glyph)/2), glyph, icons)
 		} else if node.iconText != "" {
 			label := text.Layout(node.iconText, false, measurer, textSize, iconSize-8, 0, icons)
 			lineHeight := label.LineHeight
@@ -768,7 +770,7 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 			`<rect x="` + svg.Num(-half) + `" width="` + svg.Num(iconSize) + `" height="` + svg.Num(iconSize) +
 			`" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"/>` +
 			inner +
-			svg.LabelSVG(labels[i], 0, iconSize+labelGap+labels[i].Height/2, ` class="pele-label"`, icons) +
+			svg.LabelSVG(labels[i], 0, iconSize+labelGap+float64(labels[i].Height/2), ` class="pele-label"`, icons) +
 			"</g>"
 	}
 
@@ -783,7 +785,7 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 	}
 	width := math.Ceil(max(maxX-minX, title.Width) + float64(2*pad))
 	height := math.Ceil(maxY - minY + titleHeight + float64(2*pad))
-	ox := jsmath.Round((width-(maxX-minX))/2 - minX)
+	ox := jsmath.Round(float64((width-(maxX-minX))/2) - minX)
 	oy := jsmath.Round(pad + titleHeight - minY)
 	body := ""
 	if clusters != "" {
@@ -798,7 +800,7 @@ func draw(model *architectureDb, config *jsobj.Object, rc *core.Context, tight b
 	if nodesOut != "" {
 		body += `<g class="pele-nodes">` + nodesOut + "</g>"
 	}
-	content := svg.LabelSVG(title, width/2, pad+title.Height/2, ` class="pele-title" font-weight="var(--_tw)"`, nil)
+	content := svg.LabelSVG(title, float64(width/2), pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil)
 	if body != "" {
 		content += `<g transform="translate(` + jsnum.Format(ox) + "," + jsnum.Format(oy) + `)">` + body + "</g>"
 	}
