@@ -194,7 +194,7 @@ func capturedOptions(t *testing.T, rec *jsobj.Object) pele.Options {
 		case "linkRel":
 			opts.LinkRel = ptr(v.(string))
 		case "linkSchemes", "imageSchemes":
-			var list []string
+			list := []string{}
 			for _, s := range v.([]any) {
 				list = append(list, s.(string))
 			}
@@ -267,4 +267,17 @@ func jsonNumber(v float64) string {
 		return "null"
 	}
 	return jsnum.Format(v)
+}
+
+// An empty scheme list allows no schemes, where a missing one allows the defaults, so the
+// replay must not turn [] into nil.
+func TestCapturedOptionsKeepEmptySchemeLists(t *testing.T) {
+	rec, err := jsjson.Parse(`{"measurer":"default","options":{"linkSchemes":[],"imageSchemes":[]}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := capturedOptions(t, rec.(*jsobj.Object))
+	if opts.LinkSchemes == nil || len(opts.LinkSchemes) != 0 || opts.ImageSchemes == nil || len(opts.ImageSchemes) != 0 {
+		t.Fatalf("schemes = %#v / %#v, want empty non-nil lists", opts.LinkSchemes, opts.ImageSchemes)
+	}
 }

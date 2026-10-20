@@ -38,7 +38,9 @@ type Options struct {
 	// OutputLimit is the longest SVG returned, in UTF-16 code units. Nil means 4,000,000.
 	OutputLimit *int
 	// MaxEdges is the most edges a flowchart may have. Nil means 5,000.
-	MaxEdges     *int
+	MaxEdges *int
+	// LinkSchemes and ImageSchemes are the schemes a link or an image may use besides a
+	// relative address. Nil leaves upstream's defaults; an empty, non-nil list allows none.
 	LinkSchemes  []string
 	ImageSchemes []string
 	Links        *bool
