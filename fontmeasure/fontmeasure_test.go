@@ -72,6 +72,15 @@ func TestWidthMatchesAnvil(t *testing.T) {
 	}
 }
 
+// DejaVu has no kern table: its kerning is only in GPOS, which sfnt reads.
+func TestWidthAppliesGPOSKerning(t *testing.T) {
+	m := newMeasurer(t)
+	pair, apart := m.Width("AV", 16, 0), m.Width("A", 16, 0)+m.Width("V", 16, 0)
+	if pair >= apart {
+		t.Fatalf("Width(AV) = %v, want less than Width(A)+Width(V) = %v", pair, apart)
+	}
+}
+
 func TestWidthReadsSurrogatesAsJS(t *testing.T) {
 	m := newMeasurer(t)
 	tests := map[string]struct {

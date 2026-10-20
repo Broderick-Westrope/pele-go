@@ -59,7 +59,11 @@ var faceNames = [4]string{"regular", "bold", "italic", "bold italic"}
 // byte slices must not be modified afterwards. The measurer is safe for concurrent use.
 //
 // Width is the sum of the glyph advances plus kerning between adjacent glyphs, measured
-// without hinting. A character the face has no glyph for is measured as 'n'. Lone
+// without hinting. Kerning is what golang.org/x/image/font/sfnt reads: pair adjustments of
+// the GPOS kern feature for the latn script (or DFLT), else the legacy kern table. Other
+// GPOS features, GSUB substitutions such as ligatures, and shaping are not applied, so
+// widths can differ from a browser's for scripts that need them. Anvil's measure.go, which
+// this generalises, used the same calls, so with the same fonts the widths are equal. A character the face has no glyph for is measured as 'n'. Lone
 // surrogates in text are measured as U+FFFD, the character pele.Render writes in their
 // place.
 func New(regular, bold, italic, boldItalic []byte, opts ...Option) (pele.TextMeasurer, error) {

@@ -93,7 +93,8 @@ m, err := fontmeasure.New(regular, bold, italic, boldItalic) // TTF/OTF bytes yo
 res, err := pele.Render(ctx, src, pele.Options{Measurer: m})
 ```
 
-`fontmeasure` sums glyph advances and kerning at 1024 ppem, measures a missing glyph as
+`fontmeasure` sums glyph advances and kerning (the GPOS `kern` feature, else the legacy
+`kern` table; no ligatures or shaping) at 1024 ppem, measures a missing glyph as
 `n`, and takes `fontmeasure.WithMono(...)` for code spans. It embeds no fonts, and it's the
 only package that pulls in `golang.org/x/image`. You can also implement `pele.TextMeasurer`
 yourself; it must be safe for concurrent use and must not panic (as must `Options.Icons`).
