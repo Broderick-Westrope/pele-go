@@ -70,6 +70,7 @@ func corpus(t testing.TB, name string) []string {
 }
 
 var infoInputs = []string{
+	"---\nconfig:\n  info:\n    useMaxWidth: true\n---\ninfo",
 	"info",
 	"info\n",
 	"  info showInfo",
@@ -183,6 +184,14 @@ type optionSet struct {
 
 func ptr[T any](v T) *T { return &v }
 
+func mustConfig(text string) *pele.Config {
+	c, err := pele.ParseConfig(text)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
 var optionSets = []optionSet{
 	{name: "defaults", apply: func(*pele.Options) {}},
 	{
@@ -203,6 +212,13 @@ var optionSets = []optionSet{
 		name:  "zeroes",
 		js:    map[string]any{"padding": 0, "fontSize": 0, "idPrefix": ""},
 		apply: func(o *pele.Options) { o.Padding, o.FontSize, o.IDPrefix = ptr(0.0), ptr(0.0), ptr("") },
+	},
+	{
+		name: "host config",
+		js:   map[string]any{"config": map[string]any{"info": map[string]any{"useMaxWidth": false}, "wrap": true}},
+		apply: func(o *pele.Options) {
+			o.Config = mustConfig(`{"info": {"useMaxWidth": false}, "wrap": true}`)
+		},
 	},
 	{
 		name:  "limits",

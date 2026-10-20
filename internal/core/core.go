@@ -50,6 +50,9 @@ type Options struct {
 	Now time.Time
 	// Location is the time zone gantt charts read dates in. Nil means time.Local.
 	Location *time.Location
+	// Config is Mermaid configuration from the host. The diagram's own front matter and
+	// directives win over it, key by key at the top level.
+	Config *jsobj.Object
 }
 
 // Link is an element of a rendered diagram that links somewhere.
@@ -214,6 +217,15 @@ func parseSource(ctx context.Context, source string, opts Options) parsed {
 	}
 	checkContext(ctx)
 	config := pre.Config
+	if opts.Config != nil {
+		// {...extra, ...pre.config}. Deep-copied so a render never changes the caller's
+		// config, which other renders may be reading.
+		config = opts.Config.DeepClone()
+		for _, k := range pre.Config.Keys() {
+			v, _ := pre.Config.Get(k)
+			config.Set(k, v)
+		}
+	}
 	src := pre.Text
 	if diagram.KeepComments {
 		src = pre.WithComments

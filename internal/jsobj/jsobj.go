@@ -90,6 +90,29 @@ func (o *Object) Clone() *Object {
 	return c
 }
 
+// DeepClone returns a copy that shares no objects or arrays with o.
+func (o *Object) DeepClone() *Object {
+	c := New()
+	for _, k := range o.Keys() {
+		c.Set(k, deepClone(o.values[k]))
+	}
+	return c
+}
+
+func deepClone(v any) any {
+	switch v := v.(type) {
+	case *Object:
+		return v.DeepClone()
+	case []any:
+		out := make([]any, len(v))
+		for i, e := range v {
+			out[i] = deepClone(e)
+		}
+		return out
+	}
+	return v
+}
+
 // Truthy reports whether v is truthy to JavaScript.
 func Truthy(v any) bool {
 	switch v := v.(type) {

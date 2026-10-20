@@ -10,8 +10,11 @@ package pele
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
+	"github.com/Broderick-Westrope/pele-go/internal/jsjson"
+	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
@@ -23,6 +26,24 @@ const UpstreamVersion = "1.7.0"
 // Options are the render options. Pointer fields are unset when nil, so that a zero value
 // can be told from no value; see the field comments for each default.
 type Options = core.Options
+
+// Config is Mermaid configuration, an object in JavaScript's key order. Make one with
+// ParseConfig.
+type Config = jsobj.Object
+
+// ParseConfig reads Mermaid configuration from JSON text, which must hold an object. Keys
+// keep their order, as they would in a JS object.
+func ParseConfig(jsonText string) (*Config, error) {
+	v, err := jsjson.Parse(jsonText)
+	if err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+	obj, ok := v.(*jsobj.Object)
+	if !ok {
+		return nil, errors.New("parse config: not a JSON object")
+	}
+	return obj, nil
+}
 
 // Link is an element of a rendered diagram that links somewhere.
 type Link = core.Link
