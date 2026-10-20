@@ -355,7 +355,7 @@ func (set optionSet) options(m pele.TextMeasurer) pele.Options {
 // case whose output holds one, from the source or from an escape, is left to the V8 test.
 func assertParity(t *testing.T, o *oracle.Oracle, src string, set optionSet, m pele.TextMeasurer) {
 	t.Helper()
-	if hasLoneSurrogate(src) || outputHasLoneSurrogate(src, set.options(m)) {
+	if hasLoneSurrogate(src) || outputHasLoneSurrogate(src, set.options(m)) || outputHasWebLink(src, set.options(m)) {
 		return
 	}
 	jsOpts := oracle.Options{Now: fixedNow, Extra: set.js}
@@ -468,6 +468,22 @@ func outputHasLoneSurrogate(src string, opts pele.Options) bool {
 		return hasLoneSurrogate(pe.Message) || hasLoneSurrogate(pe.Snippet)
 	}
 	return hasLoneSurrogate(res.SVG)
+}
+
+// outputHasWebLink reports whether the port links to an http or https address. goja has no
+// URL, which sanitizeUrl parses such an address with, so Pele in goja writes about:blank and
+// leaves the link out; the V8 test judges these.
+func outputHasWebLink(src string, opts pele.Options) bool {
+	res, err := core.Render(context.Background(), src, opts)
+	if err != nil {
+		return false
+	}
+	for _, l := range res.Links {
+		if h := strings.ToLower(l.Href); strings.HasPrefix(h, "http:") || strings.HasPrefix(h, "https:") {
+			return true
+		}
+	}
+	return false
 }
 
 func hasLoneSurrogate(s string) bool {
