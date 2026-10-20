@@ -194,19 +194,29 @@ func portable(sources []string) []string {
 
 // TestCorpusParity checks every corpus source of each registered type, and the hand-written
 // inputs, against Pele in goja and in Node, across the option sets and both measurers.
+// Types run in parallel, each with its own goja runtime and node process, except the zoned
+// types: goja reads the zone from time.Local, which they set, so they run first and alone.
 func TestCorpusParity(t *testing.T) {
 	byType := corpusByType(t)
 	for typ, inputs := range handInputs {
 		byType[typ] = append(byType[typ], inputs...)
 	}
-	var o *oracle.Oracle
-	nodes := map[string]*oracle.Node{}
 	for _, typ := range slices.Sorted(maps.Keys(byType)) {
 		t.Run(typ, func(t *testing.T) {
 			if !core.Registered(typ) {
 				t.Skip("not registered")
 			}
+			if !zonedTypes[typ] {
+				t.Parallel()
+			}
 			sources := portable(byType[typ])
+			var o *oracle.Oracle
+			nodes := map[string]*oracle.Node{}
+			t.Cleanup(func() {
+				for _, node := range nodes {
+					_ = node.Close()
+				}
+			})
 			inEachZone(t, typ, func(t *testing.T, zone string) {
 				t.Run("goja", func(t *testing.T) {
 					if o == nil {
@@ -234,9 +244,6 @@ func TestCorpusParity(t *testing.T) {
 				})
 			})
 		})
-	}
-	for _, node := range nodes {
-		_ = node.Close()
 	}
 }
 
@@ -313,11 +320,16 @@ func (set optionSet) in(loc *time.Location) optionSet {
 // startNode starts the V8 oracle, skipping the test when node is not installed.
 func startNode(t testing.TB) *oracle.Node { t.Helper(); return startNodeIn(t, "") }
 
-// startNodeIn is startNode with node in zone; "" leaves the process's own.
+// startNodeIn is startNode with node in zone; "" leaves the process's own. With
+// PELE_REQUIRE_NODE=1, as CI sets it, a missing node fails the test instead, so the V8
+// checks cannot pass by skipping.
 func startNodeIn(t testing.TB, zone string) *oracle.Node {
 	t.Helper()
 	node, err := oracle.NewNodeIn(zone)
 	if errors.Is(err, exec.ErrNotFound) {
+		if os.Getenv("PELE_REQUIRE_NODE") == "1" {
+			t.Fatal("node is not installed, and PELE_REQUIRE_NODE=1 requires it")
+		}
 		t.Skip("node is not installed")
 	}
 	if err != nil {

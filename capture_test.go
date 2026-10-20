@@ -26,8 +26,9 @@ import (
 // TestCapturedParity replays every public parse and render call upstream's own test suite
 // made (captured under V8 by scripts/capture-cases.mjs) and checks the port returns what
 // upstream did. Each registered type's shard is replayed, and the shard of inputs no type
-// was detected in.
+// was detected in. It runs in parallel with other tests, as it sets no global state.
 func TestCapturedParity(t *testing.T) {
+	t.Parallel()
 	files, err := filepath.Glob(shardPath("*"))
 	if err != nil {
 		t.Fatal(err)
@@ -38,6 +39,7 @@ func TestCapturedParity(t *testing.T) {
 			if shard != "none" && !core.Registered(shard) {
 				t.Skip("not registered")
 			}
+			t.Parallel()
 			records := readShard(t, shard)
 			if len(records) == 0 {
 				t.Fatal("no captured calls")

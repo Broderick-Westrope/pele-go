@@ -18,6 +18,7 @@ func TestNoFusedMultiplyAdd(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds the module")
 	}
+	t.Parallel()
 	cmd := exec.Command("go", "build", "-gcflags=github.com/Broderick-Westrope/pele-go/...=-S", "./...")
 	cmd.Env = append(os.Environ(), "GOARCH=arm64", "GOOS=linux", "CGO_ENABLED=0")
 	out, err := cmd.CombinedOutput()

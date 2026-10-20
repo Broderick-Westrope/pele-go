@@ -94,7 +94,8 @@ Per-render state goes on the model or `core.Context`.
    - `TestDetectTypeParity`.
    Before a type is registered these skip it; once registered they must all pass.
 2. Fuzz for at least 60 s per type: `go test -run '^$' -fuzz '^FuzzParity$' -fuzztime 60s .`
-   with `PELE_FUZZ_TYPE=<type>` (goja), and `FuzzParityV8` the same way. Keep failing
+   with `PELE_FUZZ_TYPE=<type>` (goja), and `FuzzParityV8` the same way
+   (`scripts/fuzz-all.sh <target> <time> [type...]` loops over types). Keep failing
    inputs the fuzzer writes under `testdata/fuzz`.
    Then run `PELE_GEN=2000 PELE_GEN_TYPE=<type> go test -run '^TestGeneratedParity$' .`
    (and again with `PELE_GEN_BIG=1`), which builds big valid diagrams from the corpus and
@@ -115,6 +116,13 @@ Per-render state goes on the model or `core.Context`.
 
 `go vet ./...`, `gofmt` and `go test -race ./...` must be clean. Run
 `go run honnef.co/go/tools/cmd/staticcheck@latest ./...` too.
+
+The V8 checks skip when `node` is not on `PATH`; `PELE_REQUIRE_NODE=1` makes them fail
+instead. CI (`.github/workflows/ci.yml`) sets it and runs vet, gofmt, staticcheck and
+`go test -race -timeout 30m ./...` with Node 22, fuzzes every type for 10 s per engine on
+each PR, and for 60 s per engine nightly. `TestCorpusParity` and `TestCapturedParity` run
+their types in parallel, each with its own goja runtime and node process, so keep per-type
+state inside the subtest; zoned types (which set `time.Local` for goja) run alone first.
 
 ## Style
 
