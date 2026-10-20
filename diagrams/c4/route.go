@@ -127,20 +127,20 @@ func hit(b *box, px, py, qx, qy float64) float64 {
 	dy := qy - py
 	switch b.form {
 	case "person":
-		return min(hitRect(x, y+head, x+w, y+h, px, py, dx, dy), hitEllipse(x+w/2, y+14, 13, 13, px, py, dx, dy))
+		return min(hitRect(x, y+head, x+w, y+h, px, py, dx, dy), hitEllipse(x+float64(w/2), y+14, 13, 13, px, py, dx, dy))
 	case "cyl":
 		ry := cylRy(w)
 		return min(
 			hitRect(x, y+ry, x+w, y+h-ry, px, py, dx, dy),
-			hitEllipse(x+w/2, y+ry, w/2, ry, px, py, dx, dy),
-			hitEllipse(x+w/2, y+h-ry, w/2, ry, px, py, dx, dy),
+			hitEllipse(x+float64(w/2), y+ry, w/2, ry, px, py, dx, dy),
+			hitEllipse(x+float64(w/2), y+h-ry, w/2, ry, px, py, dx, dy),
 		)
 	case "h-cyl":
 		rx := queueRx(h)
 		return min(
 			hitRect(x+rx, y, x+w-rx, y+h, px, py, dx, dy),
-			hitEllipse(x+rx, y+h/2, rx, h/2, px, py, dx, dy),
-			hitEllipse(x+w-rx, y+h/2, rx, h/2, px, py, dx, dy),
+			hitEllipse(x+rx, y+float64(h/2), rx, h/2, px, py, dx, dy),
+			hitEllipse(x+w-rx, y+float64(h/2), rx, h/2, px, py, dx, dy),
 		)
 	}
 	return hitRect(x, y, x+w, y+h, px, py, dx, dy)
@@ -166,10 +166,10 @@ func contains(outer, inner *box) bool {
 
 // connect is the straight line from a to b: x, y of its start, then of its end.
 func connect(a, b *box, shift float64) (float64, float64, float64, float64) {
-	ax := a.x + a.w/2
-	ay := a.y + a.h/2
-	bx := b.x + b.w/2
-	by := b.y + b.h/2
+	ax := a.x + float64(a.w/2)
+	ay := a.y + float64(a.h/2)
+	bx := b.x + float64(b.w/2)
+	by := b.y + float64(b.h/2)
 	down := contains(a, b)
 	if down || contains(b, a) {
 		// One holds the other: a short line from the nearest side of the outer box.
@@ -177,8 +177,8 @@ func connect(a, b *box, shift float64) (float64, float64, float64, float64) {
 		if down {
 			outer, inner = a, b
 		}
-		ix := inner.x + inner.w/2
-		iy := inner.y + inner.h/2
+		ix := inner.x + float64(inner.w/2)
+		iy := inner.y + float64(inner.h/2)
 		left := inner.x - outer.x
 		right := outer.x + outer.w - inner.x - inner.w
 		top := inner.y - outer.y
@@ -223,8 +223,8 @@ func connect(a, b *box, shift float64) (float64, float64, float64, float64) {
 	if !truthy(length) {
 		length = 1
 	}
-	nx := float64(-(qy-py)/length) * shift
-	ny := float64((qx-px)/length) * shift
+	nx := float64(float64(-(qy-py)/length) * shift)
+	ny := float64(float64((qx-px)/length) * shift)
 	ta := hit(a, qx+nx, qy+ny, px+nx, py+ny)
 	tb := hit(b, px+nx, py+ny, qx+nx, qy+ny)
 	if ta <= 1 && tb <= 1 {
@@ -432,7 +432,7 @@ func bent(points []float64, along int, startTrim, endTrim float64, set func(r *r
 
 func across(lo, hi float64) []float64 {
 	var out []float64
-	mid := (lo + hi) / 2
+	mid := float64((lo + hi) / 2)
 	step := max(laneStep, (hi-lo)/4)
 	for k := 0; k < 9; k++ {
 		at := mid + float64(stepAt(k)*step)
@@ -451,10 +451,10 @@ type candidate struct {
 }
 
 func elbow(a, b *box, others []*box, ls *lanes, startTrim, endTrim float64) (route, bool) {
-	ax := a.x + a.w/2
-	ay := a.y + a.h/2
-	bx := b.x + b.w/2
-	by := b.y + b.h/2
+	ax := a.x + float64(a.w/2)
+	ay := a.y + float64(a.h/2)
+	bx := b.x + float64(b.w/2)
+	by := b.y + float64(b.h/2)
 	var best *candidate
 	consider := func(points []float64, upright bool, sides [2]int) {
 		if !clearOf(points, others, a, b) {
@@ -490,8 +490,8 @@ func elbow(a, b *box, others []*box, ls *lanes, startTrim, endTrim float64) (rou
 			lanesAcross = across(a.x+a.w, b.x)
 		}
 	search1:
-		for _, y0 := range ls.ports(a, sides[0], ay+float64(down*a.h)/4, a.y+8, a.y+a.h-8) {
-			for _, y1 := range ls.ports(b, sides[1], by-float64(down*b.h)/4, b.y+8, b.y+b.h-8) {
+		for _, y0 := range ls.ports(a, sides[0], ay+float64(float64(down*a.h)/4), a.y+8, a.y+a.h-8) {
+			for _, y1 := range ls.ports(b, sides[1], by-float64(float64(down*b.h)/4), b.y+8, b.y+b.h-8) {
 				for _, at := range lanesAcross {
 					x0 := at + float64((ax-at)*min(hit(a, at, y0, ax, y0), 1))
 					x1 := at + float64((bx-at)*min(hit(b, at, y1, bx, y1), 1))
@@ -514,8 +514,8 @@ func elbow(a, b *box, others []*box, ls *lanes, startTrim, endTrim float64) (rou
 			lanesAcross = across(a.y+a.h, b.y)
 		}
 	search2:
-		for _, x0 := range ls.ports(a, sides[0], ax+float64(sideways*a.w)/4, a.x+8, a.x+a.w-8) {
-			for _, x1 := range ls.ports(b, sides[1], bx-float64(sideways*b.w)/4, b.x+8, b.x+b.w-8) {
+		for _, x0 := range ls.ports(a, sides[0], ax+float64(float64(sideways*a.w)/4), a.x+8, a.x+a.w-8) {
+			for _, x1 := range ls.ports(b, sides[1], bx-float64(float64(sideways*b.w)/4), b.x+8, b.x+b.w-8) {
 				for _, at := range lanesAcross {
 					y0 := at + float64((ay-at)*min(hit(a, x0, at, x0, ay), 1))
 					y1 := at + float64((by-at)*min(hit(b, x1, at, x1, by), 1))
@@ -563,10 +563,10 @@ type way struct {
 // from them.
 func routeRel(a, b *box, shift float64, others []*box, careful bool, ls *lanes, startTrim, endTrim float64) route {
 	if a == b {
-		spread := min(a.h/2-4, 10)
+		spread := min(float64(a.h/2)-4, 10)
 		length := jsmath.Hypot(loop, spread)
 		x := a.x + a.w
-		cy := a.y + a.h/2
+		cy := a.y + float64(a.h/2)
 		ux := loop / length
 		uy := spread / length
 		return route{
@@ -664,10 +664,10 @@ func routeRel(a, b *box, shift float64, others []*box, careful bool, ls *lanes, 
 			}
 			return true
 		}
-		ax := a.x + a.w/2
-		ay := a.y + a.h/2
-		bx := b.x + b.w/2
-		by := b.y + b.h/2
+		ax := a.x + float64(a.w/2)
+		ay := a.y + float64(a.h/2)
+		bx := b.x + float64(b.w/2)
+		by := b.y + float64(b.h/2)
 		towards := sign(bx - ax)
 		if upright {
 			towards = sign(by - ay)
@@ -690,15 +690,15 @@ func routeRel(a, b *box, shift float64, others []*box, careful bool, ls *lanes, 
 				if forward {
 					side = 1
 				}
-				p0 = ls.ports(a, side, ay+float64(towards*a.h)/4, a.y+8, a.y+a.h-8)[0]
-				p1 = ls.ports(b, side, by-float64(towards*b.h)/4, b.y+8, b.y+b.h-8)[0]
+				p0 = ls.ports(a, side, ay+float64(float64(towards*a.h)/4), a.y+8, a.y+a.h-8)[0]
+				p1 = ls.ports(b, side, by-float64(float64(towards*b.h)/4), b.y+8, b.y+b.h-8)[0]
 			} else {
 				side = 2
 				if forward {
 					side = 3
 				}
-				p0 = ls.ports(a, side, ax+float64(towards*a.w)/4, a.x+8, a.x+a.w-8)[0]
-				p1 = ls.ports(b, side, bx-float64(towards*b.w)/4, b.x+8, b.x+b.w-8)[0]
+				p0 = ls.ports(a, side, ax+float64(float64(towards*a.w)/4), a.x+8, a.x+a.w-8)[0]
+				p1 = ls.ports(b, side, bx-float64(float64(towards*b.w)/4), b.x+8, b.x+b.w-8)[0]
 			}
 			pointsAt := func(at float64) []float64 {
 				if upright {

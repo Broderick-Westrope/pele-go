@@ -307,7 +307,7 @@ func draw(db *c4Db, rc *core.Context, tight bool, gap float64) (core.Rendered, i
 				for _, t := range slide {
 					cx := rt.x0 + float64((rt.x1-rt.x0)*t) + px
 					cy := rt.y0 + float64((rt.y1-rt.y0)*t) + py
-					area := covered(cx-lw/2, cy-lh/2, cx+lw/2, cy+lh/2)
+					area := covered(cx-float64(lw/2), cy-float64(lh/2), cx+float64(lw/2), cy+float64(lh/2))
 					if area < least {
 						least = area
 						at = t
@@ -321,19 +321,19 @@ func draw(db *c4Db, rc *core.Context, tight bool, gap float64) (core.Rendered, i
 			}
 		}
 		cx := rt.x0 + float64((rt.x1-rt.x0)*at) + dx
-		top := rt.y0 + float64((rt.y1-rt.y0)*at) + dy - lh/2
+		top := rt.y0 + float64((rt.y1-rt.y0)*at) + dy - float64(lh/2)
 		if careful {
-			taken = append(taken, cx-lw/2, top, cx+lw/2, top+lh)
+			taken = append(taken, cx-float64(lw/2), top, cx+float64(lw/2), top+lh)
 		}
-		grow(cx-lw/2, top, cx+lw/2, top+lh)
+		grow(cx-float64(lw/2), top, cx+float64(lw/2), top+lh)
 		labelsOut.WriteString(`<g class="pele-edge-label" data-id="` + svg.EscText(id) + `">`)
 		if r.descr != "" {
 			labelsOut.WriteString(`<title>` + svg.EscText(r.descr) + `</title>`)
 		}
-		labelsOut.WriteString(`<rect x="` + svg.Num(cx-lw/2) + `" y="` + svg.Num(top) + `" width="` + svg.Num(lw) + `" height="` + svg.Num(lh) + `" rx="3" fill="var(--_bg)"/>`)
+		labelsOut.WriteString(`<rect x="` + svg.Num(cx-float64(lw/2)) + `" y="` + svg.Num(top) + `" width="` + svg.Num(lw) + `" height="` + svg.Num(lh) + `" rx="3" fill="var(--_bg)"/>`)
 		labelsOut.WriteString(link(
-			svg.LabelSVG(label, cx, top+label.Height/2, style.Text, nil)+
-				svg.LabelSVG(techn, cx, top+label.Height+techn.Height/2, ` class="pele-c4-techn" fill="var(--_m)"`+style.Text, nil),
+			svg.LabelSVG(label, cx, top+float64(label.Height/2), style.Text, nil)+
+				svg.LabelSVG(techn, cx, top+label.Height+float64(techn.Height/2), ` class="pele-c4-techn" fill="var(--_m)"`+style.Text, nil),
 			r.link, id, &links, options))
 		labelsOut.WriteString("</g>")
 	}
@@ -381,20 +381,20 @@ func draw(db *c4Db, rc *core.Context, tight bool, gap float64) (core.Rendered, i
 				dy = cylRy(w) / 2
 			}
 			muted := ` fill="var(--_m)"` + style.Text
-			y := dy - n.textH/2
-			txt := svg.LabelSVG(labels[0], dx, y+labels[0].Height/2, ` class="pele-c4-type" font-size="`+jsnum.Format(small-1)+`"`+muted, nil)
+			y := dy - float64(n.textH/2)
+			txt := svg.LabelSVG(labels[0], dx, y+float64(labels[0].Height/2), ` class="pele-c4-type" font-size="`+jsnum.Format(small-1)+`"`+muted, nil)
 			y += labels[0].Height
-			txt += svg.LabelSVG(labels[1], dx, y+labels[1].Height/2, ` class="pele-label" font-weight="var(--_hw)"`+style.Text, nil)
+			txt += svg.LabelSVG(labels[1], dx, y+float64(labels[1].Height/2), ` class="pele-label" font-weight="var(--_hw)"`+style.Text, nil)
 			y += labels[1].Height
-			txt += svg.LabelSVG(labels[2], dx, y+labels[2].Height/2, ` class="pele-c4-techn" font-size="`+smallText+`"`+muted, nil)
+			txt += svg.LabelSVG(labels[2], dx, y+float64(labels[2].Height/2), ` class="pele-c4-techn" font-size="`+smallText+`"`+muted, nil)
 			y += labels[2].Height + 4
-			txt += svg.LabelSVG(labels[3], dx, y+labels[3].Height/2, ` class="pele-c4-descr" font-size="`+smallText+`"`+style.Text, nil)
+			txt += svg.LabelSVG(labels[3], dx, y+float64(labels[3].Height/2), ` class="pele-c4-descr" font-size="`+smallText+`"`+style.Text, nil)
 			fill, extClass := "--_s", ""
 			if external {
 				fill, extClass = "--_bg", " pele-c4-external"
 			}
 			nodesOut.WriteString(`<g class="pele-node pele-shape-` + form + ` pele-c4-` + shape.kind + extClass + `" data-id="` + svg.EscText(shape.alias) +
-				`" transform="translate(` + svg.Num(n.x+w/2) + `,` + svg.Num(n.y+h/2) + `)">` +
+				`" transform="translate(` + svg.Num(n.x+float64(w/2)) + `,` + svg.Num(n.y+float64(h/2)) + `)">` +
 				link(svg.DrawShape(form, w, h, ` fill="var(`+fill+`)"`+stroke+style.Shape, stroke+style.Line)+txt, shape.link, shape.alias, &links, options) +
 				"</g>")
 		}
@@ -412,11 +412,11 @@ func draw(db *c4Db, rc *core.Context, tight bool, gap float64) (core.Rendered, i
 	inner := max(maxX-minX, title.Width)
 	width := math.Ceil(inner + float64(2*pad))
 	height := math.Ceil(maxY - minY + titleHeight + float64(2*pad))
-	ox := pad - minX + (inner-(maxX-minX))/2
+	ox := pad - minX + float64((inner-(maxX-minX))/2)
 	oy := pad + titleHeight - minY
 
 	var content strings.Builder
-	content.WriteString(svg.LabelSVG(title, width/2, pad+title.Height/2, ` class="pele-title" font-weight="var(--_tw)"`, nil))
+	content.WriteString(svg.LabelSVG(title, width/2, pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil))
 	content.WriteString(`<g transform="translate(` + svg.Num(ox) + `,` + svg.Num(oy) + `)">`)
 	if clusters.Len() > 0 {
 		content.WriteString(`<g class="pele-clusters">` + clusters.String() + `</g>`)
