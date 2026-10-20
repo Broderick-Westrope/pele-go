@@ -186,10 +186,15 @@ func TestNodeData(t *testing.T) {
 
 func TestBadShapes(t *testing.T) {
 	tests := map[string]string{
-		"upper case": "No such shape: Rect. Shape names should be lowercase.",
-		"unknown":    "No such shape: blob.",
+		"upper case":            "No such shape: Rect. Shape names should be lowercase.",
+		"unicode 16 upper case": "No such shape: \u1c89. Shape names should be lowercase.",
+		"unknown":               "No such shape: blob.",
 	}
-	srcs := map[string]string{"upper case": "flowchart TB\nA@{ shape: Rect }", "unknown": "flowchart TB\nA@{ shape: blob }"}
+	srcs := map[string]string{
+		"upper case":            "flowchart TB\nA@{ shape: Rect }",
+		"unicode 16 upper case": "flowchart TB\nA@{ shape: \u1c89 }",
+		"unknown":               "flowchart TB\nA@{ shape: blob }",
+	}
 	for name, want := range tests {
 		t.Run(name, func(t *testing.T) {
 			if err := parseErr(t, srcs[name]); err.Message != want {

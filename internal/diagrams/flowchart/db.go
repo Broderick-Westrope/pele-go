@@ -164,17 +164,27 @@ func toNumber(v any) float64 {
 	return jsnum.Parse(jsobj.ToString(v))
 }
 
-// changesWhenLowered reports whether s.toLowerCase() !== s.
+// changesWhenLowered reports whether s.toLowerCase() !== s. U+0130 lowers to two characters
+// in JS; any other change is a different rune. Go's tables are Unicode 15, V8's 16, which
+// adds the upper case letters newUpper lists.
 func changesWhenLowered(s string) bool {
 	for i := 0; i < len(s); {
 		r, n := jsstr.Decode(s, i)
-		// U+0130 lowers to two characters in JS; any other change is a different rune.
-		if r == 0x130 || unicode.ToLower(r) != r {
+		if r == 0x130 || unicode.ToLower(r) != r || newUpper(r) {
 			return true
 		}
 		i += n
 	}
 	return false
+}
+
+// newUpper reports whether r is an upper case letter Unicode 16 added.
+func newUpper(r rune) bool {
+	switch r {
+	case 0x1c89, 0xa7cb, 0xa7cc, 0xa7da, 0xa7dc:
+		return true
+	}
+	return r >= 0x10d50 && r <= 0x10d65
 }
 
 func flowError(message string, code perr.Code) {
