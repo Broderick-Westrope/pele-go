@@ -687,7 +687,7 @@ func draw(model *blockDb, config *jsobj.Object, rc *core.Context, tight bool) co
 			if labelled[key] {
 				step = jsmath.Round(edgeSize*1.5) + 2
 			}
-			points = routeEdge(s, t, float64((float64(k)-float64(total-1)/2)*step), check)
+			points = routeEdge(s, t, float64((float64(k)-float64(float64(total-1)/2))*step), check)
 			n := len(points)
 			// The label goes on the longer leg.
 			firstLeg := math.Abs(points[2]-points[0]) + math.Abs(points[3]-points[1])
