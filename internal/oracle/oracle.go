@@ -80,6 +80,9 @@ func New() (*Oracle, error) {
 		return nil, fmt.Errorf("pele.global.js checksum %s, want %s", got, bundleSHA256)
 	}
 	vm := goja.New()
+	if err := installURL(vm); err != nil {
+		return nil, err
+	}
 	if _, err := vm.RunScript("pele.global.js", bundle); err != nil {
 		return nil, fmt.Errorf("load pele: %w", err)
 	}
