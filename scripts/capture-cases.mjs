@@ -32,13 +32,15 @@ function fail(message) {
   process.exit(1);
 }
 
+// entries.test.ts resets modules to test registration, so its calls' outcomes depend on
+// which types were registered at the time and can never be replayed.
 copyFileSync(join(here, 'capture/capture-setup.ts'), setup);
 writeFileSync(
   config,
   `import base from './vitest.config.ts';
 import { defineConfig, mergeConfig } from 'vitest/config';
 export default mergeConfig(base, defineConfig({
-  test: { setupFiles: ['./tests/support/__capture-setup.ts'], exclude: ['tests/website/**', 'node_modules/**'] },
+  test: { setupFiles: ['./tests/support/__capture-setup.ts'], exclude: ['tests/website/**', 'tests/entries.test.ts', 'node_modules/**'] },
 }));
 `
 );

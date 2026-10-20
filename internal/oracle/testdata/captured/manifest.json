@@ -1,14 +1,12 @@
 {
  "suite": {
-  "files": 943,
-  "passed": 6710,
-  "failing": [
-   "le-1.7.0/tests/entries.test.ts > core without the full entry point loads a type the first time it is needed"
-  ]
+  "files": 940,
+  "passed": 6704,
+  "failing": []
  },
- "calls": 191723,
- "unique": 179345,
- "replayable": 179329,
+ "calls": 191712,
+ "unique": 179338,
+ "replayable": 179322,
  "unsupported": {
   "model not returned by parse": 1,
   "option of type object": 1,
@@ -23,7 +21,7 @@
   "cynefin": 2261,
   "er": 5722,
   "eventmodeling": 2667,
-  "flowchart": 7076,
+  "flowchart": 7073,
   "gantt": 4830,
   "gitGraph": 3231,
   "info": 1794,
@@ -31,9 +29,9 @@
   "journey": 2371,
   "kanban": 4595,
   "mindmap": 3834,
-  "none": 37103,
+  "none": 37100,
   "packet": 3224,
-  "pie": 1298,
+  "pie": 1297,
   "quadrantChart": 2999,
   "radar": 3045,
   "railroad": 4683,
