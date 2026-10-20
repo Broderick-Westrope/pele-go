@@ -1,0 +1,84 @@
+package block
+
+// Token kinds, in upstream's order.
+const (
+	tEndOfInput = iota
+	tError
+	tKey
+	tIDBlock
+	tColumns
+	tMDStr
+	tStr
+	tSpaceBlock
+	tDefault
+	tLinkStyle
+	tInterpolate
+	tClassDef
+	tDefaultClassDefID
+	tClassDefID
+	tClassDefStyleOpts
+	tClass
+	tClassEntityIDs
+	tStyleClass
+	tStyle
+	tStyleEntityIDs
+	tStyleDefinitionData
+	tAccTitle
+	tAccTitleValue
+	tAccDescr
+	tAccDescrValue
+	tAccDescrMultilineValue
+	tEnd
+	tNodeDStart
+	tNodeDEnd
+	tBlockArrowStart
+	tBlockArrowEnd
+	tDir
+	tNodeID
+	tLink
+	tStartLink
+	tLinkLabel
+	tSize
+	tEOF
+)
+
+var tokenNames = [...]string{
+	"$end",
+	"INVALID",
+	"BLOCK_DIAGRAM_KEY",
+	"id-block",
+	"COLUMNS",
+	"MD_STR",
+	"STR",
+	"SPACE_BLOCK",
+	"DEFAULT",
+	"LINKSTYLE",
+	"INTERPOLATE",
+	"classDef",
+	"DEFAULT_CLASSDEF_ID",
+	"CLASSDEF_ID",
+	"CLASSDEF_STYLEOPTS",
+	"class",
+	"CLASSENTITY_IDS",
+	"STYLECLASS",
+	"style",
+	"STYLE_ENTITY_IDS",
+	"STYLE_DEFINITION_DATA",
+	"acc_title",
+	"acc_title_value",
+	"acc_descr",
+	"acc_descr_value",
+	"acc_descr_multiline_value",
+	"end",
+	"NODE_DSTART",
+	"NODE_DEND",
+	"BLOCK_ARROW_START",
+	"BLOCK_ARROW_END",
+	"DIR",
+	"NODE_ID",
+	"LINK",
+	"START_LINK",
+	"LINK_LABEL",
+	"SIZE",
+	"EOF",
+}

@@ -180,6 +180,14 @@ section('jsmath', () => {
     cases.push(call(Math.hypot, 'hypot', xs));
   }
   cases.push(call(Math.hypot, 'hypot', [3, 4]), call(Math.hypot, 'hypot', [1e200, 1e200]), call(Math.hypot, 'hypot', [0, -0]));
+  const unit = [0, 1, -1, 0.5, -0.5, 0.975, 0.98, -0.98, 1e-9, 2 ** -27, 2 ** -28, 1.5, -2, 0.4999999999999999, 0.9999999999999999];
+  for (let i = 0; i < 2000; i++) unit.push((random() * 2 - 1) * (random() < 0.2 ? 2 ** -Math.floor(random() * 40) : 1));
+  for (const x of unit) cases.push(call(Math.asin, 'asin', [x]));
+  const sizes = () => (random() - 0.5) * 2 ** (Math.floor(random() * 140) - 70);
+  const pairs = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [3, 1], [1e300, 1e-300], [1e-300, -1e300], [5, -2], [0.3, 0.7]];
+  for (let i = 0; i < 2500; i++) pairs.push(random() < 0.5 ? [sizes(), sizes()] : [(random() - 0.5) * 200, (random() - 0.5) * 200]);
+  for (let i = 0; i < 200; i++) pairs.push([(random() - 0.5) * 20, 1]);
+  for (const [y, x] of pairs) cases.push(call(Math.atan2, 'atan2', [y, x]));
   return cases;
 });
 

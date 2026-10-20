@@ -14,5 +14,7 @@ func TestMatchesV8(t *testing.T) {
 		"sin":   func(a fixture.Args) any { return jsmath.Sin(a.Num(0)) },
 		"cos":   func(a fixture.Args) any { return jsmath.Cos(a.Num(0)) },
 		"hypot": func(a fixture.Args) any { return jsmath.Hypot(a.AllNums()...) },
+		"asin":  func(a fixture.Args) any { return jsmath.Asin(a.Num(0)) },
+		"atan2": func(a fixture.Args) any { return jsmath.Atan2(a.Num(0), a.Num(1)) },
 	})
 }
