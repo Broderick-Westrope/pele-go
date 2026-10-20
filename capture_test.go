@@ -170,6 +170,29 @@ var capturedNow = time.Date(2026, time.October, 20, 13, 31, 40, 0, time.UTC)
 // captureZone is the time zone the captured calls ran in, which gantt's dates depend on.
 const captureZone = "Australia/Sydney"
 
+// numbers decodes the non-finite numbers nested in a captured value, as number does for one.
+func numbers(v any) any {
+	switch x := v.(type) {
+	case *jsobj.Object:
+		if _, ok := x.Get("$number"); ok && x.Len() == 1 {
+			return number(x)
+		}
+		out := jsobj.New()
+		for _, k := range x.Keys() {
+			e, _ := x.Get(k)
+			out.Set(k, numbers(e))
+		}
+		return out
+	case []any:
+		out := make([]any, len(x))
+		for i, e := range x {
+			out[i] = numbers(e)
+		}
+		return out
+	}
+	return v
+}
+
 func capturedOptions(t *testing.T, rec *jsobj.Object) pele.Options {
 	t.Helper()
 	opts := pele.Options{Location: location(t, captureZone)}
@@ -239,7 +262,7 @@ func capturedOptions(t *testing.T, rec *jsobj.Object) pele.Options {
 				opts.ImageSchemes = list
 			}
 		case "config":
-			opts.Config = v.(*jsobj.Object)
+			opts.Config = numbers(v).(*jsobj.Object)
 		default:
 			t.Fatalf("captured option %q has no Go equivalent", key)
 		}
