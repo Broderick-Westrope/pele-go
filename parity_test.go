@@ -347,14 +347,45 @@ func FuzzParity(f *testing.F) {
 	typ := fuzzType(f)
 	fuzzSeeds(f, typ)
 	o := newOracle(f)
+	// goja's Date parses strings and resolves local times unlike V8, so for a zoned type
+	// V8 referees: an input the two engines disagree on is left to FuzzParityV8.
+	referees := map[string]*oracle.Node{}
+	if zonedTypes[typ] {
+		for _, zone := range testZones {
+			referees[zone] = startNodeIn(f, zone)
+			f.Cleanup(func() { _ = referees[zone].Close() })
+		}
+	}
 	f.Fuzz(func(t *testing.T, src string) {
 		if got, err := o.DetectType(src); err == nil && got != "" && got != typ {
 			t.Skipf("not a %s diagram", typ)
 		}
 		for _, zone := range zonesOf(typ) {
-			assertParity(t, o, src, optionSets[0].in(setLocal(t, zone)), nil)
+			set := optionSets[0].in(setLocal(t, zone))
+			if node := referees[zone]; node != nil && !enginesAgree(t, o, node, src, set) {
+				continue
+			}
+			assertParity(t, o, src, set, nil)
 		}
 	})
+}
+
+// enginesAgree reports whether Pele gives the same result for src in goja as in Node.
+func enginesAgree(t *testing.T, o *oracle.Oracle, node *oracle.Node, src string, set optionSet) bool {
+	t.Helper()
+	gojaRes, gojaErr, err := o.Render(src, oracle.Options{Now: fixedNow, Extra: set.js})
+	if err != nil {
+		t.Fatalf("oracle render %q: %v", src, err)
+	}
+	v8Res, v8Err, err := node.Render(src, oracle.NodeOptions{Options: set.js, Now: float64(fixedNow.UnixMilli())})
+	if err != nil {
+		t.Fatalf("node render %q: %v", src, err)
+	}
+	if gojaErr != nil || v8Err != nil {
+		return gojaErr != nil && v8Err != nil && *gojaErr == *v8Err
+	}
+	return gojaRes.SVG == v8Res.SVG && gojaRes.Width == v8Res.Width && gojaRes.Height == v8Res.Height &&
+		slices.Equal(gojaRes.Links, v8Res.Links)
 }
 
 // optionSet is one set of render options, as Go options and as the JS object that means
