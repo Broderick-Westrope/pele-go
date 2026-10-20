@@ -216,3 +216,46 @@ func Slice(s string, from, to int) string {
 	to = min(to, len(units))
 	return FromUTF16(units[from:to])
 }
+
+// Compare orders a and b by UTF-16 code unit, as JS's < and default sort() do. Go's string
+// comparison orders by code point, which puts characters outside the BMP after U+E000 to
+// U+FFFF where JS puts them before.
+func Compare(a, b string) int {
+	i, j := 0, 0
+	var pendingA, pendingB rune = -1, -1
+	next := func(s string, k *int, pending *rune) (rune, bool) {
+		if *pending >= 0 {
+			u := *pending
+			*pending = -1
+			return u, true
+		}
+		if *k >= len(s) {
+			return 0, false
+		}
+		r, n := Decode(s, *k)
+		*k += n
+		if r >= 0x10000 {
+			hi, lo := utf16.EncodeRune(r)
+			*pending = lo
+			return hi, true
+		}
+		return r, true
+	}
+	for {
+		ua, okA := next(a, &i, &pendingA)
+		ub, okB := next(b, &j, &pendingB)
+		switch {
+		case !okA && !okB:
+			return 0
+		case !okA:
+			return -1
+		case !okB:
+			return 1
+		case ua != ub:
+			if ua < ub {
+				return -1
+			}
+			return 1
+		}
+	}
+}

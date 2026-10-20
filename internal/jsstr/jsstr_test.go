@@ -143,3 +143,42 @@ func TestCanonicalPairsAdjacentSurrogates(t *testing.T) {
 		t.Fatalf("WellFormed = %q, want %q", got, want)
 	}
 }
+
+func TestCompareMatchesJSSort(t *testing.T) {
+	vm := goja.New()
+	sortFn, err := vm.RunString(`(xs) => xs.slice().sort()`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sortJS, _ := goja.AssertFunction(sortFn)
+	pool := []uint16{'a', 'B', 'z', '0', 0xe9, 0x4e2d, 0xff5e, 0xe000, 0xfffd, 0xd83d, 0xde00}
+	rng := rand.New(rand.NewPCG(11, 12))
+	for range 300 {
+		var items []string
+		var jsItems []any
+		for range 1 + rng.IntN(6) {
+			units := make([]uint16, rng.IntN(4))
+			for i := range units {
+				units[i] = pool[rng.IntN(len(pool))]
+			}
+			if hasLoneSurrogate(units) {
+				continue
+			}
+			items = append(items, jsstr.FromUTF16(units))
+			jsItems = append(jsItems, goja.StringFromUTF16(units))
+		}
+		got := slices.Clone(items)
+		slices.SortStableFunc(got, jsstr.Compare)
+		v, err := sortJS(goja.Undefined(), vm.ToValue(jsItems))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var want []string
+		for _, e := range v.Export().([]any) {
+			want = append(want, e.(string))
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("sorted %q, want %q", got, want)
+		}
+	}
+}
