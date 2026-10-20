@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 )
 
@@ -78,8 +79,8 @@ type nodeLink struct {
 
 type nodeResponse struct {
 	SVG         []uint16   `json:"svg"`
-	Width       float64    `json:"width"`
-	Height      float64    `json:"height"`
+	Width       string     `json:"width"`
+	Height      string     `json:"height"`
 	Type        string     `json:"type"`
 	MermaidType string     `json:"mermaidType"`
 	Links       []nodeLink `json:"links"`
@@ -136,7 +137,7 @@ func (n *Node) Render(src string, opts NodeOptions) (*Result, *Error, error) {
 		}, nil
 	}
 	res := &Result{
-		SVG: jsstr.FromUTF16(resp.SVG), Width: resp.Width, Height: resp.Height,
+		SVG: jsstr.FromUTF16(resp.SVG), Width: jsnum.Parse(resp.Width), Height: jsnum.Parse(resp.Height),
 		Type: resp.Type, MermaidType: resp.MermaidType,
 	}
 	for _, l := range resp.Links {

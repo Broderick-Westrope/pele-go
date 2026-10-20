@@ -31,8 +31,9 @@ rl.on('line', (line) => {
     const r = pele.render(text(req.src), opts);
     out = {
       svg: units(r.svg),
-      width: r.width,
-      height: r.height,
+      // As strings, so a NaN size survives JSON.
+      width: String(r.width),
+      height: String(r.height),
       type: r.type,
       mermaidType: r.mermaidType,
       links: r.links.map((l) => ({ id: units(l.id), href: units(l.href), internal: l.internal })),

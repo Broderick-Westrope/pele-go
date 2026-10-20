@@ -389,7 +389,7 @@ func enginesAgree(t *testing.T, o *oracle.Oracle, node *oracle.Node, src string,
 	if gojaErr != nil || v8Err != nil {
 		return gojaErr != nil && v8Err != nil && *gojaErr == *v8Err
 	}
-	return gojaRes.SVG == v8Res.SVG && gojaRes.Width == v8Res.Width && gojaRes.Height == v8Res.Height &&
+	return gojaRes.SVG == v8Res.SVG && sameNumber(gojaRes.Width, v8Res.Width) && sameNumber(gojaRes.Height, v8Res.Height) &&
 		slices.Equal(gojaRes.Links, v8Res.Links)
 }
 
@@ -515,7 +515,7 @@ func compare(t *testing.T, label, src string, opts pele.Options, want *oracle.Re
 	if public.SVG != jsstr.WellFormed(want.SVG) {
 		t.Errorf("%s: render %q SVG (public):\n got %s\nwant %s", label, src, public.SVG, jsstr.WellFormed(want.SVG))
 	}
-	if public.Width != want.Width || public.Height != want.Height {
+	if !sameNumber(public.Width, want.Width) || !sameNumber(public.Height, want.Height) {
 		t.Errorf("%s: render %q size = %vx%v, want %vx%v", label, src, public.Width, public.Height, want.Width, want.Height)
 	}
 	if string(public.Type) != want.Type || public.MermaidType != want.MermaidType {
@@ -614,4 +614,9 @@ func TestFontFamilyFollowsV8Unicode(t *testing.T) {
 		}
 		compare(t, "v8/fontFamily", "info", pele.Options{FontFamily: ptr(family)}, want, wantErr)
 	}
+}
+
+// sameNumber reports whether two sizes are the same JS number, NaN included.
+func sameNumber(a, b float64) bool {
+	return a == b || a != a && b != b
 }
