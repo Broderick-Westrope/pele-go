@@ -62,6 +62,10 @@ func scalars(s string) []rune {
 
 func isASCIIAlpha(r rune) bool { return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' }
 
+// ParseHTTPURL is new URL(input).toString() for an absolute http or https URL, or false
+// where new URL() throws. The goja oracle, which has no URL, is given it.
+func ParseHTTPURL(input string) (string, bool) { return parseURL(input) }
+
 // parseURL parses an absolute http or https URL and serialises it, or reports false where
 // new URL() throws.
 func parseURL(input string) (string, bool) {
