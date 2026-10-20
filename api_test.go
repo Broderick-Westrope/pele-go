@@ -81,3 +81,15 @@ func TestLosslessOutputPairsEscapedSurrogates(t *testing.T) {
 		t.Fatalf("SVG does not contain the emoji: %q", res.SVG)
 	}
 }
+
+func TestPtrPointsToACopy(t *testing.T) {
+	v := 12.5
+	p := pele.Ptr(v)
+	*p = 1
+	if v != 12.5 {
+		t.Fatalf("writing through Ptr(v) changed v to %v", v)
+	}
+	if pele.Ptr(false) == pele.Ptr(false) {
+		t.Fatal("Ptr returned the same pointer twice")
+	}
+}

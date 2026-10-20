@@ -45,6 +45,13 @@ func ParseConfig(jsonText string) (*Config, error) {
 	return obj, nil
 }
 
+// Ptr returns a pointer to a copy of v, for setting the pointer fields of Options:
+//
+//	pele.Options{FontSize: pele.Ptr(14.0), Responsive: pele.Ptr(false)}
+func Ptr[T any](v T) *T {
+	return &v
+}
+
 // Link is an element of a rendered diagram that links somewhere.
 type Link = core.Link
 
