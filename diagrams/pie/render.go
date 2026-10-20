@@ -3,6 +3,7 @@ package pie
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
@@ -205,7 +206,7 @@ func draw(m model, config *jsobj.Object, rc *core.Context, radius float64, tight
 		cy = bodyTop + float64(height/2)
 	}
 
-	slices, labels, outside := "", "", ""
+	var slices, labels, outside, legendOut strings.Builder
 	angle := 0.0
 	rim := radius + outsideMargin/2
 	var placedOutside []placedLabel
@@ -223,7 +224,7 @@ func draw(m model, config *jsobj.Object, rc *core.Context, radius float64, tight
 			continue
 		}
 		end := angle + float64(float64(share*math.Pi)*2)
-		slices += `<path class="pele-slice" data-id="` + svg.EscText(label) + `" d="` + slice(angle, end, radius, inner) + `" fill="` + svg.SeriesColor(index) + `"/>`
+		slices.WriteString(`<path class="pele-slice" data-id="` + svg.EscText(label) + `" d="` + slice(angle, end, radius, inner) + `" fill="` + svg.SeriesColor(index) + `"/>`)
 		mid := (angle + end) / 2
 		pct := toFixed0(share*100) + "%"
 		if narrow[index] {
@@ -235,15 +236,15 @@ func draw(m model, config *jsobj.Object, rc *core.Context, radius float64, tight
 			x := jsmath.Sin(at) * rim
 			y := float64(-jsmath.Cos(at) * rim)
 			placedOutside = append(placedOutside, placedLabel{x, y, width})
-			outside += `<text x="` + svg.Num(x) + `" y="` + svg.Num(y+float64(small*0.35)) + `">` + pct + `</text>`
+			outside.WriteString(`<text x="` + svg.Num(x) + `" y="` + svg.Num(y+float64(small*0.35)) + `">` + pct + `</text>`)
 		} else {
 			r := radius * textPosition
-			labels += `<text x="` + svg.Num(jsmath.Sin(mid)*r) + `" y="` + svg.Num(float64(-jsmath.Cos(mid)*r)+float64(small*0.35)) + `">` + pct + `</text>`
+			labels.WriteString(`<text x="` + svg.Num(jsmath.Sin(mid)*r) + `" y="` + svg.Num(float64(-jsmath.Cos(mid)*r)+float64(small*0.35)) + `">` + pct + `</text>`)
 		}
 		angle = end
 	}
-	if slices == "" {
-		slices = `<circle class="pele-slice" r="` + jsnum.Format(radius) + `" fill="none" stroke="var(--_b)"/>`
+	if slices.Len() == 0 {
+		slices.WriteString(`<circle class="pele-slice" r="` + jsnum.Format(radius) + `" fill="none" stroke="var(--_b)"/>`)
 	}
 
 	var lx, ly float64
@@ -265,14 +266,13 @@ func draw(m model, config *jsobj.Object, rc *core.Context, radius float64, tight
 			ly = bodyTop + diameter + 20
 		}
 	}
-	legendOut := ""
 	for index, label := range legend {
 		y := ly + float64(float64(index)*row) + row/2
-		legendOut += `<g class="pele-legend-item" data-id="` + svg.EscText(labelsOf[index]) + `">` +
+		legendOut.WriteString(`<g class="pele-legend-item" data-id="` + svg.EscText(labelsOf[index]) + `">` +
 			`<rect x="` + svg.Num(lx) + `" y="` + svg.Num(y-swatch/2) + `" width="` + strconv.Itoa(swatch) + `" height="` + strconv.Itoa(swatch) +
 			`" rx="2" fill="` + svg.SeriesColor(index) + `"/>` +
 			svg.LabelSVG(label, lx+swatch+8+float64(label.Width/2), y, "", nil) +
-			"</g>"
+			"</g>")
 	}
 
 	totalWidth := math.Ceil(width + 2*pad)
@@ -280,15 +280,15 @@ func draw(m model, config *jsobj.Object, rc *core.Context, radius float64, tight
 	smallAttr := jsnum.Format(small)
 	translate := `transform="translate(` + svg.Num(cx) + "," + svg.Num(cy) + `)"`
 	content := svg.LabelSVG(title, totalWidth/2, pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) +
-		`<g class="pele-slices" ` + translate + ` stroke="var(--_bg)" stroke-width="1" stroke-linejoin="round">` + slices + `</g>`
-	if labels != "" {
-		content += `<g class="pele-slice-labels" ` + translate + ` font-size="` + smallAttr + `" text-anchor="middle" fill="var(--_bg)">` + labels + `</g>`
+		`<g class="pele-slices" ` + translate + ` stroke="var(--_bg)" stroke-width="1" stroke-linejoin="round">` + slices.String() + `</g>`
+	if labels.Len() > 0 {
+		content += `<g class="pele-slice-labels" ` + translate + ` font-size="` + smallAttr + `" text-anchor="middle" fill="var(--_bg)">` + labels.String() + `</g>`
 	}
-	if outside != "" {
-		content += `<g class="pele-slice-labels" ` + translate + ` font-size="` + smallAttr + `" text-anchor="middle">` + outside + `</g>`
+	if outside.Len() > 0 {
+		content += `<g class="pele-slice-labels" ` + translate + ` font-size="` + smallAttr + `" text-anchor="middle">` + outside.String() + `</g>`
 	}
-	if legendOut != "" {
-		content += `<g class="pele-legend" font-size="` + smallAttr + `">` + legendOut + `</g>`
+	if legendOut.Len() > 0 {
+		content += `<g class="pele-legend" font-size="` + smallAttr + `">` + legendOut.String() + `</g>`
 	}
 
 	doc := svg.Document("pie", totalWidth, totalHeight, size, svg.DocumentOptions{

@@ -2,6 +2,7 @@ package packet
 
 import (
 	"math"
+	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
@@ -185,7 +186,7 @@ func draw(m model, config *jsobj.Object, rc *core.Context, down bool) core.Rende
 	}
 
 	left := pad + max(0, (title.Width-width)/2)
-	fields, bits := "", ""
+	var fields, bits strings.Builder
 	for index, row := range rows {
 		y := pad + tops[index] + numbers
 		rowHeight := rowHeights[index]
@@ -198,18 +199,18 @@ func draw(m model, config *jsobj.Object, rc *core.Context, down bool) core.Rende
 			}
 			x := left + float64(slot*bitWidth)
 			w := float64(count*bitWidth) - gap
-			fields += `<g class="pele-node" data-id="` + jsnum.Format(b.start) + "-" + jsnum.Format(b.end) + `">` +
-				`<rect x="` + svg.Num(x) + `" y="` + svg.Num(y) + `" width="` + svg.Num(w) + `" height="` + svg.Num(rowHeight) + `" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"/>`
+			fields.WriteString(`<g class="pele-node" data-id="` + jsnum.Format(b.start) + "-" + jsnum.Format(b.end) + `">` +
+				`<rect x="` + svg.Num(x) + `" y="` + svg.Num(y) + `" width="` + svg.Num(w) + `" height="` + svg.Num(rowHeight) + `" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"/>`)
 			if down {
-				fields += svg.LabelSVG(labels[index][k], x+float64(w/2), y+float64(rowHeight/2), "", nil)
+				fields.WriteString(svg.LabelSVG(labels[index][k], x+float64(w/2), y+float64(rowHeight/2), "", nil))
 			} else if t := fit(b.label, w-6); t.ok && t.Size <= rowHeight {
 				fontSize := ""
 				if t.Size != labelSize {
 					fontSize = ` font-size="` + svg.Num(t.Size) + `"`
 				}
-				fields += `<text x="` + svg.Num(x+float64(w/2)) + `" y="` + svg.Num(y+float64(rowHeight/2)+float64(t.Size*0.35)) + `"` + fontSize + `>` + svg.Esc(t.Text) + `</text>`
+				fields.WriteString(`<text x="` + svg.Num(x+float64(w/2)) + `" y="` + svg.Num(y+float64(rowHeight/2)+float64(t.Size*0.35)) + `"` + fontSize + `>` + svg.Esc(t.Text) + `</text>`)
 			}
-			fields += "</g>"
+			fields.WriteString("</g>")
 			if !showBitsOn {
 				continue
 			}
@@ -218,10 +219,10 @@ func draw(m model, config *jsobj.Object, rc *core.Context, down bool) core.Rende
 				leading, trailing = b.end, b.start
 			}
 			if count == 1 {
-				bits += `<text x="` + svg.Num(x+float64(w/2)) + `" y="` + svg.Num(y-4) + `" text-anchor="middle">` + jsnum.Format(leading) + `</text>`
+				bits.WriteString(`<text x="` + svg.Num(x+float64(w/2)) + `" y="` + svg.Num(y-4) + `" text-anchor="middle">` + jsnum.Format(leading) + `</text>`)
 			} else {
-				bits += `<text x="` + svg.Num(x) + `" y="` + svg.Num(y-4) + `">` + jsnum.Format(leading) + `</text>` +
-					`<text x="` + svg.Num(x+w) + `" y="` + svg.Num(y-4) + `" text-anchor="end">` + jsnum.Format(trailing) + `</text>`
+				bits.WriteString(`<text x="` + svg.Num(x) + `" y="` + svg.Num(y-4) + `">` + jsnum.Format(leading) + `</text>` +
+					`<text x="` + svg.Num(x+w) + `" y="` + svg.Num(y-4) + `" text-anchor="end">` + jsnum.Format(trailing) + `</text>`)
 			}
 		}
 	}
@@ -229,11 +230,11 @@ func draw(m model, config *jsobj.Object, rc *core.Context, down bool) core.Rende
 	totalWidth := math.Ceil(max(width, title.Width) + float64(2*pad))
 	totalHeight := math.Ceil(rowsHeight + titleHeight + float64(2*pad))
 	content := ""
-	if fields != "" {
-		content += `<g class="pele-packet-fields" font-size="` + jsnum.Format(labelSize) + `" text-anchor="middle">` + fields + `</g>`
+	if fields.Len() > 0 {
+		content += `<g class="pele-packet-fields" font-size="` + jsnum.Format(labelSize) + `" text-anchor="middle">` + fields.String() + `</g>`
 	}
-	if bits != "" {
-		content += `<g class="pele-packet-bits" font-size="` + jsnum.Format(bitSize) + `" fill="var(--_m)">` + bits + `</g>`
+	if bits.Len() > 0 {
+		content += `<g class="pele-packet-bits" font-size="` + jsnum.Format(bitSize) + `" fill="var(--_m)">` + bits.String() + `</g>`
 	}
 	// Mermaid puts a packet's title under it.
 	content += svg.LabelSVG(title, totalWidth/2, totalHeight-pad-float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil)

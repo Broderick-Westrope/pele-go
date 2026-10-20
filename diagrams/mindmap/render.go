@@ -3,6 +3,7 @@ package mindmap
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
@@ -269,14 +270,16 @@ func draw(model *mindmapDb, config *jsobj.Object, rc *core.Context, down bool) c
 	}
 
 	minX, maxX, minY, maxY := 0.0, 0.0, 0.0, 0.0
-	out, edges, body, color := "", "", "", ""
+	var out, edges, body strings.Builder
+	color := ""
 	flush := func(section int) {
-		if body == "" {
+		if body.Len() == 0 {
 			return
 		}
-		out += `<g class="pele-branch pele-section-` + strconv.Itoa(section) + `">` +
-			`<g class="pele-edges" fill="none" stroke="` + color + `" stroke-width="1.5">` + edges + `</g>` + body + `</g>`
-		edges, body = "", ""
+		out.WriteString(`<g class="pele-branch pele-section-` + strconv.Itoa(section) + `">` +
+			`<g class="pele-edges" fill="none" stroke="` + color + `" stroke-width="1.5">` + edges.String() + `</g>` + body.String() + `</g>`)
+		edges.Reset()
+		body.Reset()
 	}
 
 	// The root is drawn last, on top of the links that leave it.
@@ -321,8 +324,8 @@ func draw(model *mindmapDb, config *jsobj.Object, rc *core.Context, down bool) c
 			bend := max(0, min(bendMax, x2-x1, y2-y1))
 			// The next link carries on from where this one leaves the trunk, so the trunk has no gap.
 			trunk[p] = y2 - bend
-			edges += `<path class="pele-edge" d="M` + svg.Num(x1) + "," + svg.Num(y1) + "V" + svg.Num(y2-bend) + "Q" + svg.Num(x1) + "," + svg.Num(y2) + " " +
-				svg.Num(x1+bend) + "," + svg.Num(y2) + "H" + svg.Num(x2) + `"/>`
+			edges.WriteString(`<path class="pele-edge" d="M` + svg.Num(x1) + "," + svg.Num(y1) + "V" + svg.Num(y2-bend) + "Q" + svg.Num(x1) + "," + svg.Num(y2) + " " +
+				svg.Num(x1+bend) + "," + svg.Num(y2) + "H" + svg.Num(x2) + `"/>`)
 		} else if i > 0 {
 			if parent[i] == 0 {
 				color = svg.SeriesColor(node.section)
@@ -346,8 +349,8 @@ func draw(model *mindmapDb, config *jsobj.Object, rc *core.Context, down bool) c
 			}
 			y2 := top + anchor[i]
 			mid := svg.Num((x1 + x2) / 2)
-			edges += `<path class="pele-edge" d="M` + svg.Num(x1) + "," + svg.Num(y1) + "C" + mid + "," + svg.Num(y1) + " " + mid + "," + svg.Num(y2) + " " +
-				svg.Num(x2) + "," + svg.Num(y2) + `"/>`
+			edges.WriteString(`<path class="pele-edge" d="M` + svg.Num(x1) + "," + svg.Num(y1) + "C" + mid + "," + svg.Num(y1) + " " + mid + "," + svg.Num(y2) + " " +
+				svg.Num(x2) + "," + svg.Num(y2) + `"/>`)
 		}
 
 		pill := shape == "" && len(node.children) > 0
@@ -395,9 +398,9 @@ func draw(model *mindmapDb, config *jsobj.Object, rc *core.Context, down bool) c
 		}
 		group += "</g>"
 		if i > 0 {
-			body += group
+			body.WriteString(group)
 		} else {
-			out += group
+			out.WriteString(group)
 		}
 	}
 
@@ -414,7 +417,7 @@ func draw(model *mindmapDb, config *jsobj.Object, rc *core.Context, down bool) c
 	totalWidth := math.Ceil(width + float64(2*pad))
 	totalHeight := math.Ceil(maxY - minY + titleHeight + float64(2*pad))
 	content := svg.LabelSVG(title, totalWidth/2, pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) +
-		`<g transform="translate(` + svg.Num(pad-minX+float64((width-maxX+minX)/2)) + "," + svg.Num(pad+titleHeight-minY) + `)">` + out + `</g>`
+		`<g transform="translate(` + svg.Num(pad-minX+float64((width-maxX+minX)/2)) + "," + svg.Num(pad+titleHeight-minY) + `)">` + out.String() + `</g>`
 
 	doc := svg.Document("mindmap", totalWidth, totalHeight, size, svg.DocumentOptions{
 		IDPrefix:       options.IDPrefix,
