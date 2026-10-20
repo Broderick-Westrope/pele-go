@@ -164,10 +164,10 @@ func toNumber(v any) float64 {
 	return jsnum.Parse(jsobj.ToString(v))
 }
 
-// changesWhenLowered reports whether s.toLowerCase() !== s. U+0130 lowers to two characters
+// ChangesWhenLowered reports whether s.toLowerCase() !== s. U+0130 lowers to two characters
 // in JS; any other change is a different rune. Go's tables are Unicode 15, V8's 16, which
 // adds the upper case letters newUpper lists.
-func changesWhenLowered(s string) bool {
+func ChangesWhenLowered(s string) bool {
 	for i := 0; i < len(s); {
 		r, n := jsstr.Decode(s, i)
 		if r == 0x130 || unicode.ToLower(r) != r || newUpper(r) {
@@ -269,7 +269,7 @@ func (db *FlowDb) addVertex(id string, text *FlowText, typ string, style []strin
 	}
 	if v, ok := get("shape"); ok {
 		shape := jsobj.ToString(v)
-		if changesWhenLowered(shape) || strings.Contains(shape, "_") {
+		if ChangesWhenLowered(shape) || strings.Contains(shape, "_") {
 			flowError("No such shape: "+shape+". Shape names should be lowercase.", perr.Semantic)
 		}
 		if !IsValidShape(shape) {
