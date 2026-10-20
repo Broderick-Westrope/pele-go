@@ -216,6 +216,11 @@ var zonedTypes = map[string]bool{"gantt": true}
 
 var testZones = []string{"UTC", "Australia/Sydney"}
 
+// refereedTypes are the diagram types whose output goja does not compute as V8 does: gantt,
+// as goja's Date parses strings and resolves local times unlike V8, and usecase, whose errors
+// quote the message of JSON.parse, which goja words unlike V8.
+var refereedTypes = map[string]bool{"gantt": true, "usecase": true}
+
 // zonesOf returns the zones a type's cases run in: "" alone, the process's own, for a type
 // the zone does not reach.
 func zonesOf(typ string) []string {
@@ -347,11 +352,11 @@ func FuzzParity(f *testing.F) {
 	typ := fuzzType(f)
 	fuzzSeeds(f, typ)
 	o := newOracle(f)
-	// goja's Date parses strings and resolves local times unlike V8, so for a zoned type
-	// V8 referees: an input the two engines disagree on is left to FuzzParityV8.
+	// For a type goja cannot judge alone V8 referees: an input the two engines disagree on is
+	// left to FuzzParityV8.
 	referees := map[string]*oracle.Node{}
-	if zonedTypes[typ] {
-		for _, zone := range testZones {
+	if refereedTypes[typ] {
+		for _, zone := range zonesOf(typ) {
 			referees[zone] = startNodeIn(f, zone)
 			f.Cleanup(func() { _ = referees[zone].Close() })
 		}
