@@ -253,6 +253,105 @@ section('svg', () => {
   return cases;
 });
 
+section('common', () => {
+  const cases = [];
+  const t = m.tokens;
+  const WORD = { name: 'WORD', pattern: /[a-z]+/y, first: 'abcdefghijklmnopqrstuvwxyz' };
+  const types = [m.accDescr.accDescr('DESCR'), t.ACC_TITLE, t.TITLE, t.STRING, t.NEWLINE, t.WHITESPACE, t.YAML, t.DIRECTIVE, t.SINGLE_LINE_COMMENT, t.keyword('end'), WORD];
+  const pieces = ['"a b"', "'c'", '"x\\"y"', '"\\n"', '"open', "'\\\n'", '"\u2028"', ' ', '\n', 'end', 'endx', 'word', 'accDescr {', '}',
+    'accDescr: d %% c', 'accTitle: t', 'title T', '%% c', '%%{init}%%', '---\n', '"\\', '😀', '\t', '\r\n', 'é'];
+  for (let i = 0; i < 1000; i++) {
+    const src = compose(pieces, 8);
+    cases.push(call((x) => { const r = t.tokenize(x, types, 'test'); return { kinds: r.kinds, starts: r.starts, ends: r.ends }; }, 'tokenize', [src]));
+  }
+  const strPieces = ['a', '\\n', '\\t', '\\b', '\\f', '\\r', '\\v', '\\0', '\\\\', '\\"', '\\x', '\\😀', 'é', '"', "'", '\\'];
+  for (let i = 0; i < 400; i++) cases.push(call(t.stringValue, 'stringValue', [compose(strPieces, 6)]));
+  for (const x of ['', '"', '""', "'a'", '"\\"', 'x']) cases.push(call(t.stringValue, 'stringValue', [x]));
+  for (let i = 0; i < 200; i++) {
+    const src = compose(['Graph', 'graph', 'GRAPH', 'gr', 'x', 'ɢraph', ' '], 3);
+    cases.push(call(m.caseless.wordAt, 'wordAt', [src, int(0, 2), pick(['graph', 'gr', 'x'])]));
+  }
+  const triviaPieces = ['%% c\n', '% c\n', 'x%%y\n', '}%%z', '%{', ' ', '\u00a0', '\t', '\n', '# h\n', 'a', 'accTitle: hi\n', 'accdescr : d\n',
+    'accDescr { multi\nline }', 'ACCDESCR{x', 'acctitle', 'accDescr {', '}', 'section'];
+  for (let i = 0; i < 600; i++) {
+    const src = compose(triviaPieces, 6);
+    const p = int(0, Math.max(0, src.length - 1));
+    cases.push(call(m.scan.skipTrivia, 'skipTrivia', [src, p]));
+    cases.push(call(m.scan.lineEnd, 'lineEnd', [src, p]));
+    cases.push(call(m.scan.keywordAt, 'keywordAt', [src, p, pick(['accdescr', 'section', 'a'])]));
+    cases.push(call((x, q) => { const out = { types: [], texts: [], starts: [] }; const end = m.scan.accessibility(x, q, out, 10); return { end, out }; },
+      'accessibility', [src, pick([0, p])]));
+  }
+
+  const outlinePieces = ['mindmap', 'kanban', '\n', '  ', '    ', '\t', 'root', 'id', '((circle))', '(round)', '[sq]', '))bang((', ')cloud(', '{{hex}}',
+    '("str")', '["`md`"]', '::icon(fa fa-x)', ':::cls', '%% c', '@{ shape: rect, label: "a\n  b" }', '@', '-)x(-', '}', 'é', '\u00a0', '\r\n', '^', '"', '`'];
+  for (let i = 0; i < 1000; i++) {
+    const kanban = random() < 0.5;
+    const src = (random() < 0.8 ? (kanban ? 'kanban\n' : 'mindmap\n') : '') + compose(outlinePieces, 10) + '\n';
+    cases.push(call((x, k) => m.outline.tokenize(x, k), 'tokenizeOutline', [src, kanban]));
+    cases.push(call((x, k) => {
+      const calls = [];
+      m.outline.parseOutline(x, {
+        getType: (a, b) => { calls.push(['getType', a, b]); return m.outline.getType(a, b); },
+        addNode: (...args) => calls.push(['addNode', ...args]),
+        decorateNode: (d) => calls.push(['decorateNode', d]),
+      }, k);
+      return calls;
+    }, 'parseOutline', [src, kanban]));
+  }
+
+  const genericPieces = ['List', '~', 'int', ',', ' ', 'Map', 'K', 'V', '~~', 'é'];
+  for (let i = 0; i < 500; i++) cases.push(call(m.generics.parseGenericTypes, 'parseGenericTypes', [compose(genericPieces, 8)]));
+
+  for (const name of ['car', 'none', 'a&amp;b', '"q"']) {
+    cases.push(call((n, x, y, side) => m.icon.iconSvg(n, x, y, side, (k) => (k === 'car' ? '<path d="M0 0"/>' : k === 'none' ? null : undefined)),
+      'iconSvg', [name, coord(), coord(), pick([14, 15.4])]));
+  }
+
+  const labelPieces = ['word', ' ', 'longerwordwithoutbreaks', '<br>', '<BR />', '<b>', '</b>', '&amp;', '&#35;', 'ﬂ°°lt¶ß', 'ﬂ°x¶ß', ':fa-car', 'fa:fa-car',
+    '中文', '😀', '\t', 'a<c', '<br/ >', '&', ';'];
+  for (let i = 0; i < 600; i++) {
+    const raw = compose(labelPieces, 8);
+    const args = [raw, pick([12, 14, 16.5]), pick([20, 60, 150, 400]), pick([0, 1, 2])];
+    cases.push(call((r, size, max, base) => m.fit.plainLabel(r, metrics, size, max, base), 'plainLabel', args));
+    cases.push(call((r, size, max, base) => m.fit.fitLabel(r, metrics, size, max, base), 'fitLabel', args));
+  }
+  for (let i = 0; i < 500; i++) {
+    const args = [compose(['word', ' ', 'W', '中', '😀', 'iiii', '  '], 6), pick([0, 10, 30, 80, 300]), pick([14, 16, 20]), pick([6, 8, 10]), pick([0, 1, 3])];
+    cases.push(call((x, max, size, min, style) => m.fitText.fitText(x, max, size, min, metrics, style), 'fitText', args));
+  }
+
+  const draw = (scale, extra) => (plot, flag) => ({ svg: `${plot}|${flag}`, width: plot * scale + (flag ? extra : 0) + 40, height: 1, links: [] });
+  for (let i = 0; i < 300; i++) {
+    const options = {};
+    if (random() < 0.8) options.maxWidth = pick([0, -1, 100, 320, 500, 700, 1000, 333.3]);
+    if (random() < 0.3) options.padding = pick([0, 4, 16]);
+    if (random() < 0.3) options.autoDirection = random() < 0.5;
+    if (random() < 0.3) options.directionBreakpoint = pick([0, 300, 800]);
+    const natural = pick([200, 400, 800, 1200]);
+    const least = pick([50, 100, 300, 2000]);
+    const scale = pick([1, 1.3, 0.7]);
+    const extra = pick([0, 30, -100]);
+    cases.push(call((o, n, l, sc, ex) => m.fitWidth.fitWidth(o, n, l, draw(sc, ex)), 'fitWidth', [options, natural, least, scale, extra]));
+    cases.push(call(m.fitWidth.titleRoom, 'titleRoom', [options]));
+    cases.push(call((o, n, l, a) => m.fitWidth.capWidth(o, n, l, a), 'capWidth', [options, natural, least, pick([0, 40])]));
+    cases.push(call((o, n, sc, ex) => m.fitWidth.turnToFit(o, (down) => draw(sc, ex)(n, down)), 'turnToFit', [options, natural, scale, extra]));
+    cases.push(call((o, n, sc, ex) => m.fitWidth.tighten(o, (tight) => draw(sc, ex)(n, tight)), 'tighten', [options, natural, scale, extra]));
+  }
+  for (const d of ['LR', 'RL', 'TB', '', null]) cases.push(call((x) => m.fitWidth.runsAcross(x ?? undefined), 'runsAcross', [d]));
+
+  const literalPieces = ['file', '.', 'name', ' ', '/', 'averyveryverylongsegment', '\n', '😀', '中文', '\u00a0', '  ', 'x'];
+  for (let i = 0; i < 400; i++) {
+    const args = [compose(literalPieces, 8), pick([12, 14]), pick([10, 40, 90, 300]), pick([0, 1, 2, 4])];
+    cases.push(call((x, size, room, style) => m.literalLabel.literalLabel(x, metrics, size, room, style), 'literalLabel', args));
+    const markup = [compose(labelPieces, 8), pick([12, 14]), pick([30, 80, 400]), pick([20, 60, 200])];
+    cases.push(call((x, size, max, room) => m.literalLabel.breakLabel(m.label.layoutLabel(x, true, metrics, size, max), metrics, room), 'breakLabel', markup));
+    cases.push(call((x, size, max, left, top) => m.literalLabel.leftLabelSvg(m.label.layoutLabel(x, true, metrics, size, max), left, top, ' class="l"'),
+      'leftLabelSvg', [markup[0], markup[1], markup[2], coord(), coord()]));
+  }
+  return cases;
+});
+
 for (const [name, build] of Object.entries(sections)) {
   const target = { util: 'internal/util', svg: 'internal/svg', common: 'internal/diagrams/common', jsmath: 'internal/jsmath' }[name];
   write(`${target}/testdata/cases.json`, build());

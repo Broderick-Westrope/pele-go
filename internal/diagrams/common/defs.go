@@ -5,6 +5,7 @@ import (
 
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
+	"github.com/Broderick-Westrope/pele-go/internal/util"
 )
 
 func isLineBreak(c int) bool { return c == '\n' || c == '\r' }
@@ -82,6 +83,29 @@ var Title = &TokenType{Name: "TITLE", First: "\t t", Match: func(src Src, at int
 		return lineRest(src, i+1)
 	}
 	return i
+}}
+
+// String is /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/y: a quoted string, in which a backslash takes
+// the next character with it unless that ends the line.
+var String = &TokenType{Name: "STRING", First: `"'`, Match: func(src Src, at int) int {
+	q := src.At(at)
+	if q != '"' && q != '\'' {
+		return -1
+	}
+	for i := at + 1; i < len(src); {
+		switch c := int(src[i]); {
+		case c == q:
+			return i + 1
+		case c == '\\':
+			if next := src.At(i + 1); next == -1 || util.IsLineEnd(next) {
+				return -1
+			}
+			i += 2
+		default:
+			i++
+		}
+	}
+	return -1
 }}
 
 // Newline is /\r?\n/y.
@@ -346,6 +370,33 @@ func removeTrailingSpaceMultiline(s string) string {
 		i = match
 	}
 	return b.String() + s[last:]
+}
+
+// escapes are the escapes StringValue reads; any other escaped character stands for itself.
+var escapes = map[uint16]uint16{'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r', 't': '\t', 'v': '\v', '0': 0}
+
+// StringValue reads a STRING token: the text between the quotes, with escapes read.
+func StringValue(text string) string {
+	units := jsstr.UTF16(text)
+	if !strings.Contains(text, "\\") {
+		from := min(1, len(units))
+		return jsstr.FromUTF16(units[from:max(from, len(units)-1)])
+	}
+	out := make([]uint16, 0, len(units))
+	for i := 1; i < len(units)-1; i++ {
+		c := units[i]
+		if c != '\\' {
+			out = append(out, c)
+			continue
+		}
+		i++
+		next := units[i]
+		if e, ok := escapes[next]; ok {
+			next = e
+		}
+		out = append(out, next)
+	}
+	return jsstr.FromUTF16(out)
 }
 
 // Reader reads tokens for a hand-written parser, with Chevrotain-style messages on failure.
