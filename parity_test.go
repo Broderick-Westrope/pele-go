@@ -126,6 +126,10 @@ var handInputs = map[string][]string{
 	"agentflow": {
 		"agentflow-beta TB\n  flow X[\"x\"]\n    a[\"A\"]\n  end\n  class X default\n",
 	},
+	"wardley": {
+		// An empty second stage name is falsy in JS, so no " / " joins it.
+		"wardley-beta\nevolution \"A\" -> \"B\"@0.5 / \"\" -> C\n",
+	},
 }
 
 // v8Inputs are hand-written sources by diagram type that only V8 can judge.

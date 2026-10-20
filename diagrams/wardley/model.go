@@ -95,7 +95,7 @@ func populate(ast wardleyAst, db *wardleyBuilder) {
 	if ast.evolution != nil {
 		var axes wardleyAxesConfig
 		for _, stage := range ast.evolution {
-			if stage.secondName != nil {
+			if stage.secondName != nil && *stage.secondName != "" {
 				axes.stages = append(axes.stages, jsstr.Trim(stage.name)+" / "+jsstr.Trim(*stage.secondName))
 			} else {
 				axes.stages = append(axes.stages, jsstr.Trim(stage.name))
