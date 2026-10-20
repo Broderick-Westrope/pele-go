@@ -8,8 +8,19 @@ The design is `plans/design-2026-10-20-pele-go-port.md`.
 Output must be **byte-identical** to Pele 1.7.0 (tag `1.7.0`, commit 8603bf3) running under
 V8, for the same source, options, `now` and measurer: the SVG, width, height, links, and on
 failure the error code, message, type, line, column and snippet. "Looks the same" is a
-failure. The upstream source is checked out at `/tmp/pele-1.7.0` (TypeScript in `src/`,
-tests in `tests/`, `node_modules` installed).
+failure.
+
+The scripts and parts of this guide need a checkout of upstream at that tag, with its
+`node_modules` installed. Put it anywhere outside this repo; below it is `$PELE_UPSTREAM`:
+
+```sh
+git clone --branch 1.7.0 --depth 1 https://github.com/obsidianmd/pele.git "$PELE_UPSTREAM"
+(cd "$PELE_UPSTREAM" && npm ci)
+```
+
+Upstream's TypeScript is in `$PELE_UPSTREAM/src` and its tests in `$PELE_UPSTREAM/tests`.
+Every `scripts/*.mjs` that reads upstream takes the checkout as its first argument. The
+Go tests don't need it: they use the vendored bundle and fixtures under `testdata`.
 
 Port file for file: `src/diagrams/<type>/<file>.ts` becomes `diagrams/<type>/<file>.go`;
 shared code goes under `internal/` (`internal/diagrams/common`, `internal/svg`,
@@ -108,7 +119,7 @@ Per-render state goes on the model or `core.Context`.
    diff it against the port's. `internal/oracle` has both.
 5. Shared modules (`internal/util`, `internal/svg`, `internal/diagrams/common`,
    `internal/jsmath`) have no oracle of their own: their tests replay calls of upstream's
-   functions under Node, written by `node scripts/gen-shared-cases.mjs /tmp/pele-1.7.0`
+   functions under Node, written by `node scripts/gen-shared-cases.mjs "$PELE_UPSTREAM"`
    into each package's `testdata/cases.json` (`internal/fixture` runs them). Add cases there
    when you change or use one of them in a new way.
 6. goja is not a faithful JS engine for lone surrogates, numbers past 2^64 and `JSON.parse`
