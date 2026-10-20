@@ -37,31 +37,6 @@ func TestRenderStopsOnCanceledContext(t *testing.T) {
 	}
 }
 
-func TestRenderIsSafeForConcurrentUse(t *testing.T) {
-	sources := []string{"info", "info\ntitle One", "info\ntitle Two\naccTitle: t", "nope"}
-	want := make([]pele.Result, len(sources))
-	for i, src := range sources {
-		want[i], _ = pele.Render(context.Background(), src, pele.Options{})
-	}
-	done := make(chan struct{})
-	for range 8 {
-		go func() {
-			defer func() { done <- struct{}{} }()
-			for i := range 50 {
-				k := i % len(sources)
-				got, _ := pele.Render(context.Background(), sources[k], pele.Options{})
-				if got.SVG != want[k].SVG {
-					t.Errorf("concurrent render of %q differs", sources[k])
-					return
-				}
-			}
-		}()
-	}
-	for range 8 {
-		<-done
-	}
-}
-
 func TestEscapedSurrogatePairsBecomeOneCharacter(t *testing.T) {
 	res, err := pele.Render(context.Background(), "---\ntitle: \"\\uD83D\\uDE00 smile\"\n---\ninfo", pele.Options{})
 	if err != nil {

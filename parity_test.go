@@ -133,7 +133,25 @@ var handInputs = map[string][]string{
 }
 
 // v8Inputs are hand-written sources by diagram type that only V8 can judge.
-var v8Inputs = map[string][]string{"info": loneSurrogateInputs}
+var v8Inputs = map[string][]string{
+	"info":          loneSurrogateInputs,
+	"flowchart":     {"flowchart LR\n  A[a" + hi + "] --> B(" + lo + "b)\n  B -->|e" + hi + "| C", "---\ntitle: \"\\uD800 x\"\n---\nflowchart TD\n  A"},
+	"sequence":      {"sequenceDiagram\n  participant A as A" + hi + "\n  A->>B: hi" + lo + "\n  Note over A: n" + hi},
+	"pie":           {"pie title T" + hi + "\n  \"x" + lo + "\" : 1\n  \"y\" : 2"},
+	"mindmap":       {"mindmap\n  root" + hi + "\n    child" + lo + "\n    other"},
+	"class":         {"classDiagram\n  class A[\"L" + hi + "\"]\n  class B {\n    +f" + lo + "()\n  }\n  A --> B : uses" + hi},
+	"journey":       {"journey\n  title T" + hi + "\n  section S" + lo + "\n    task" + hi + ": 5: Me"},
+	"gantt":         {"gantt\n  title G" + hi + "\n  dateFormat YYYY-MM-DD\n  section S" + lo + "\n    task" + hi + " :a1, 2026-01-01, 3d"},
+	"state":         {"stateDiagram-v2\n  [*] --> S" + "\n  S : s" + hi + "\n  S --> T : go" + lo},
+	"timeline":      {"timeline\n  title T" + hi + "\n  2026 : e" + lo + " : f"},
+	"quadrantChart": {"quadrantChart\n  title Q" + hi + "\n  x-axis L" + lo + " --> H\n  P" + hi + ": [0.3, 0.6]"},
+}
+
+// hi and lo are a lone high and a lone low surrogate.
+var (
+	hi = jsstr.FromUTF16([]uint16{0xd83d})
+	lo = jsstr.FromUTF16([]uint16{0xdc01})
+)
 
 // corpusFileTypes names the diagram type of each corpus file whose name is not
 // "<type>-docs.json".
