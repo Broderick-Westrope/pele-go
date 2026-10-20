@@ -393,3 +393,23 @@ func FuzzInfoParityV8(f *testing.F) {
 		compare(t, "v8", src, optionSets[0].options(nil), want, wantErr)
 	})
 }
+
+// TestFontFamilyFollowsV8Unicode checks font names against V8's Unicode tables, which are
+// newer than Go's: U+1C89 is a letter in Unicode 16 but not in Go's Unicode 15.
+func TestFontFamilyFollowsV8Unicode(t *testing.T) {
+	node, err := oracle.NewNode()
+	if errors.Is(err, exec.ErrNotFound) {
+		t.Skip("node is not installed")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer node.Close()
+	for _, family := range []string{"\u1c89 Sans", "Noto \U0001E5D0", "Inter"} {
+		want, wantErr, err := node.Render("info", oracle.NodeOptions{Options: map[string]any{"fontFamily": family}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		compare(t, "v8/fontFamily", "info", pele.Options{FontFamily: ptr(family)}, want, wantErr)
+	}
+}

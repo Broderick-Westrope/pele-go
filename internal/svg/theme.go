@@ -2,7 +2,6 @@ package svg
 
 import (
 	"strings"
-	"unicode"
 
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
@@ -25,8 +24,27 @@ func isFamilyQuoted(r rune) bool {
 	return !strings.ContainsRune("\"'\\\n<>{}();:@", r)
 }
 
+type span struct{ lo, hi rune }
+
+func inSpans(spans []span, r rune) bool {
+	lo, hi := 0, len(spans)-1
+	for lo <= hi {
+		mid := (lo + hi) / 2
+		switch {
+		case r < spans[mid].lo:
+			hi = mid - 1
+		case r > spans[mid].hi:
+			lo = mid + 1
+		default:
+			return true
+		}
+	}
+	return false
+}
+
+// isFamilyStart is [\p{L}\p{N}_-], with V8's Unicode tables (see unicode.go).
 func isFamilyStart(r rune) bool {
-	return unicode.IsLetter(r) || unicode.IsNumber(r) || r == '_' || r == '-'
+	return inSpans(letters, r) || inSpans(numbers, r) || r == '_' || r == '-'
 }
 
 func isFamilyRest(r rune) bool {
