@@ -117,6 +117,9 @@ func TestInfoParity(t *testing.T) {
 	o := newOracle(t)
 	inputs := append(corpus(t, "info-docs.json"), infoInputs...)
 	for _, src := range inputs {
+		if hasLoneSurrogate(src) {
+			t.Fatalf("input %q has a lone surrogate, which goja cannot judge", src)
+		}
 		assertParity(t, o, src, nil)
 		assertParity(t, o, src, lengthMeasurer{})
 	}
@@ -163,6 +166,11 @@ func FuzzInfoParity(f *testing.F) {
 	}
 	o := newOracle(f)
 	f.Fuzz(func(t *testing.T, src string) {
+		if hasLoneSurrogate(src) {
+			// goja turns lone surrogates into U+FFFD in some string operations where V8
+			// keeps them, which changes measured widths, so it cannot judge these sources.
+			t.Skip("goja does not keep lone surrogates")
+		}
 		if typ, err := o.DetectType(src); err == nil && typ != "" && typ != "info" {
 			t.Skip("not an info diagram")
 		}
@@ -184,16 +192,6 @@ func assertParity(t *testing.T, o *oracle.Oracle, src string, m pele.TextMeasure
 	lossless, gotErr := core.Render(context.Background(), src, opts)
 	public, publicErr := pele.Render(context.Background(), src, opts)
 
-	// goja turns lone surrogates into U+FFFD in some string operations where V8 keeps them,
-	// so for sources that have one only the well-formed forms can be compared.
-	lossy := hasLoneSurrogate(src)
-	exact := func(s string) string {
-		if lossy {
-			return jsstr.WellFormed(s)
-		}
-		return s
-	}
-
 	if wantErr != nil {
 		for name, got := range map[string]error{"lossless": gotErr, "public": publicErr} {
 			var pe *pele.Error
@@ -206,11 +204,8 @@ func assertParity(t *testing.T, o *oracle.Oracle, src string, m pele.TextMeasure
 				Code: string(pe.Code), Message: pe.Message, Type: pe.Type, MermaidType: pe.MermaidType,
 				Line: pe.Line, Column: pe.Column, Snippet: pe.Snippet,
 			}
-			if name == "public" || lossy {
+			if name == "public" {
 				want.Message, want.Snippet = jsstr.WellFormed(want.Message), jsstr.WellFormed(want.Snippet)
-			}
-			if lossy {
-				gotFields.Message, gotFields.Snippet = jsstr.WellFormed(gotFields.Message), jsstr.WellFormed(gotFields.Snippet)
 			}
 			if gotFields != want {
 				t.Errorf("render %q (%s) error:\n got %+v\nwant %+v", src, name, gotFields, want)
@@ -222,7 +217,7 @@ func assertParity(t *testing.T, o *oracle.Oracle, src string, m pele.TextMeasure
 		t.Errorf("render %q: got errors %v / %v, want success", src, gotErr, publicErr)
 		return
 	}
-	if exact(lossless.SVG) != exact(want.SVG) {
+	if lossless.SVG != want.SVG {
 		t.Errorf("render %q SVG (lossless):\n got %s\nwant %s", src, lossless.SVG, want.SVG)
 	}
 	if public.SVG != jsstr.WellFormed(want.SVG) {
