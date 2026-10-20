@@ -162,6 +162,11 @@ func number(v any) float64 {
 	return v.(float64)
 }
 
+// capturedNow is when the captured calls ran, which a call with an invalid now used as the
+// current time. It was recovered from the outcomes of two such gantt calls, which both match
+// at this second (00:31:40 in Sydney).
+var capturedNow = time.Date(2026, time.October, 20, 13, 31, 40, 0, time.UTC)
+
 // captureZone is the time zone the captured calls ran in, which gantt's dates depend on.
 const captureZone = "Australia/Sydney"
 
@@ -186,6 +191,12 @@ func capturedOptions(t *testing.T, rec *jsobj.Object) pele.Options {
 		v, _ := raw.Get(key)
 		switch key {
 		case "now":
+			if v == nil {
+				// NaN or an Invalid Date, which upstream replaces with Date.now() as the
+				// capture ran.
+				opts.Now = capturedNow
+				continue
+			}
 			opts.Now = time.UnixMilli(int64(number(v)))
 		case "fontFamily":
 			opts.FontFamily = ptr(v.(string))
