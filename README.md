@@ -82,7 +82,7 @@ use the same measurer. There are two built in:
 
 | Measurer | Use it when |
 |---|---|
-| `pele.DefaultMeasurer` (used when `Options.Measurer` is nil) | You want upstream's output with no options. It's upstream's Arial advance table, ported exactly. |
+| `pele.DefaultMeasurer()` (what a nil `Options.Measurer` uses) | You want upstream's output with no options. It's upstream's Arial advance table, ported exactly. |
 | `fontmeasure.New(regular, bold, italic, boldItalic)` | You know which fonts will draw the SVG (for example you rasterise it) and want labels sized to them. |
 
 ```go

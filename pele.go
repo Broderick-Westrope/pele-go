@@ -7,8 +7,8 @@
 // the diagrams packages with Register.
 //
 // Render is safe for concurrent use and stops when its context is done. Labels are measured
-// with DefaultMeasurer unless Options.Measurer is set; the fontmeasure package measures
-// with real fonts.
+// with the measurer DefaultMeasurer returns unless Options.Measurer is set; the fontmeasure
+// package measures with real fonts.
 package pele
 
 import (
@@ -31,7 +31,7 @@ const UpstreamVersion = "1.7.0"
 // upstream does with no options. Pointer fields are unset when nil, so that a zero value can
 // be told from no value; set them with Ptr. The fields are:
 //
-//   - Measurer measures label text. Nil means DefaultMeasurer.
+//   - Measurer measures label text. Nil means the measurer DefaultMeasurer returns.
 //   - FontFamily and FontFamilyMono are the CSS font families the SVG names where the page
 //     sets no --pele-font or --pele-font-mono. Nil means sans-serif and monospace.
 //   - FontSize is the label size in pixels. Nil means 16.
@@ -165,9 +165,12 @@ const (
 	Mono = text.Mono
 )
 
-// DefaultMeasurer estimates widths from a table of Arial advances. It is used when
-// Options.Measurer is nil.
-var DefaultMeasurer TextMeasurer = text.Metrics
+// DefaultMeasurer returns the measurer Render uses when Options.Measurer is nil: upstream's
+// metricsMeasurer, which estimates widths from a table of Arial advances. Passing it as
+// Options.Measurer renders the same as leaving Measurer nil. It is safe for concurrent use.
+func DefaultMeasurer() TextMeasurer {
+	return text.Metrics
+}
 
 // Diagram is a diagram type, as the diagrams packages export them in their Diagram
 // variable. Its parser and renderer use internal types, so diagram types can only come from

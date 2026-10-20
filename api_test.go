@@ -118,3 +118,21 @@ func TestPtrPointsToACopy(t *testing.T) {
 		t.Fatalf("writing through Ptr(v) changed v to %v", v)
 	}
 }
+
+func TestDefaultMeasurerIsWhatANilMeasurerUses(t *testing.T) {
+	src := "flowchart LR\n  A[Mermaid text] --> B[Some wider SVG label]"
+	want, err := pele.Render(context.Background(), src, pele.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := pele.Render(context.Background(), src, pele.Options{Measurer: pele.DefaultMeasurer()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.SVG != want.SVG {
+		t.Fatalf("SVG with DefaultMeasurer() differs from SVG with a nil Measurer:\n got %s\nwant %s", got.SVG, want.SVG)
+	}
+	if w := pele.DefaultMeasurer().Width("Mermaid", 16, 0); w <= 0 {
+		t.Fatalf("DefaultMeasurer().Width = %v, want a positive width", w)
+	}
+}
