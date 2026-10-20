@@ -64,8 +64,6 @@ func isCtrl(c uint16) bool {
 	return c <= 0x1f || c >= 0x7f && c <= 0x9f || c >= 0x2000 && c <= 0x200d || c == 0xfeff
 }
 
-func isWordUnit(c int) bool { return IsWord(c) }
-
 // decodeURIComponent returns decodeURIComponent(u), or false where it throws a URIError.
 func decodeURIComponent(u units) (units, bool) {
 	// hex reads the escape at i, or -1.
@@ -145,7 +143,7 @@ func entityAt(u units, i int) (int, units) {
 		return -1, nil
 	}
 	j := i + 2
-	for isWordUnit(u.at(j)) {
+	for IsWord(u.at(j)) {
 		j++
 	}
 	if j == i+2 {
@@ -242,13 +240,11 @@ func anyMatch(u units, at func(units, int) int) bool {
 	return false
 }
 
-func isLineEndUnit(c uint16) bool { return IsLineEnd(int(c)) }
-
 // lineStarts are where ^ matches with the m flag: the start and after each line terminator.
 func lineStarts(u units) []int {
 	starts := []int{0}
 	for i, c := range u {
-		if isLineEndUnit(c) {
+		if IsLineEnd(int(c)) {
 			starts = append(starts, i+1)
 		}
 	}
@@ -260,7 +256,7 @@ func lineStarts(u units) []int {
 func schemeOf(u units) (units, bool) {
 	for _, s := range lineStarts(u) {
 		e := s
-		for e < len(u) && !isLineEndUnit(u[e]) {
+		for e < len(u) && !IsLineEnd(int(u[e])) {
 			e++
 		}
 		for k := e - 1; k > s; k-- {
@@ -298,7 +294,7 @@ func lower(u units) units {
 func isInvalidProtocol(u units) bool {
 	for _, s := range lineStarts(u) {
 		i := s
-		for i < len(u) && !isWordUnit(int(u[i])) {
+		for i < len(u) && !IsWord(int(u[i])) {
 			i++
 		}
 		if u.hasFold(i, "javascript") || u.hasFold(i, "data") || u.hasFold(i, "vbscript") {

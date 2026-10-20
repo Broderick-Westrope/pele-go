@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
+	"github.com/Broderick-Westrope/pele-go/internal/util"
 )
 
 // accDescrHead is /[\t ]*accDescr(?:[\t ]*:(?:[^\n\r]*?(?=%%)|[^\n\r]*)|\s*({))/y. It
@@ -17,7 +18,7 @@ func accDescrHead(src Src, at int) (int, bool) {
 	if j := skipBlanks(src, i); src.At(j) == ':' {
 		return lineRest(src, j+1), false
 	}
-	for isSpace(src.At(i)) {
+	for util.IsSpace(src.At(i)) {
 		i++
 	}
 	if src.At(i) != '{' {

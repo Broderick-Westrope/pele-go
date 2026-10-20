@@ -437,7 +437,7 @@ func referenceList(str, keyword string) (string, bool) {
 	if end == 0 {
 		return "", false
 	}
-	inList := func(c uint16) bool { return c < 128 && (isWordChar(int(c)) || c == '-' || c == ' ') }
+	inList := func(c uint16) bool { return c < 128 && (util.IsWord(int(c)) || c == '-' || c == ' ') }
 	// \s+ gives back whitespace until the list can start, which only a space can.
 	for k := end; k > 0; k-- {
 		if k < len(u) && inList(u[k]) {

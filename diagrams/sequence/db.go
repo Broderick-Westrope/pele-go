@@ -10,6 +10,7 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
+	"github.com/Broderick-Westrope/pele-go/internal/util"
 	"github.com/Broderick-Westrope/pele-go/internal/yaml"
 )
 
@@ -109,14 +110,10 @@ func splitBox(str string) (color, rest string, ok bool) {
 		return "", "", false
 	}
 	w := 0
-	for w < len(str) && isWordByte(str[w]) {
+	for w < len(str) && util.IsWord(int(str[w])) {
 		w++
 	}
 	return str[:w], str[w:], true
-}
-
-func isWordByte(c byte) bool {
-	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
 }
 
 type entry struct {

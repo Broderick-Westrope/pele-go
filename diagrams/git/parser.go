@@ -4,6 +4,7 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
+	"github.com/Broderick-Westrope/pele-go/internal/util"
 )
 
 // Token kinds, in the order of gitTokens.
@@ -38,22 +39,18 @@ const (
 	tReference = 31
 )
 
-func isWord(c int) bool {
-	return c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '_'
-}
-
 const wordChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"
 
 // reference is /\w([-\./\w]*[-\w])?/y: the run of name characters, backed off to its last
 // character that may end a name.
 var reference = &common.TokenType{Name: "REFERENCE", First: wordChars, Match: func(src common.Src, at int) int {
-	if !isWord(src.At(at)) {
+	if !util.IsWord(src.At(at)) {
 		return -1
 	}
 	end := at + 1
 	for i := at + 1; ; i++ {
 		c := src.At(i)
-		if c == '-' || isWord(c) {
+		if c == '-' || util.IsWord(c) {
 			end = i + 1
 		} else if c != '.' && c != '/' {
 			break

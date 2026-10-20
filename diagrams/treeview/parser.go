@@ -23,10 +23,8 @@ const (
 	kindBareName
 )
 
-func isBlank(c int) bool { return util.IsBlank(c) }
-
 func skipBlanks(src common.Src, i int) int {
-	for isBlank(src.At(i)) {
+	for util.IsBlank(src.At(i)) {
 		i++
 	}
 	return i
@@ -49,7 +47,7 @@ func annotationAt(src common.Src, at int) bool {
 // blanks. This looks once per run.
 func matchBareName(src common.Src, at int) int {
 	first := src.At(at)
-	if isBlank(first) || first == 10 || first == 13 || first == 34 || first == 39 {
+	if util.IsBlank(first) || first == 10 || first == 13 || first == 34 || first == 39 {
 		return -1
 	}
 	if src.HasPrefix(at, ":::") || src.HasPrefix(at, "icon(") || src.HasPrefix(at, "##") {
@@ -62,7 +60,7 @@ func matchBareName(src common.Src, at int) int {
 		if c == 10 || c == 13 {
 			break
 		}
-		if isBlank(c) {
+		if util.IsBlank(c) {
 			j := skipBlanks(src, i+1)
 			if annotationAt(src, j) {
 				break
@@ -192,7 +190,7 @@ type treeViewAst struct {
 
 func trimBlanksEnd(text string) string {
 	end := len(text)
-	for end > 0 && isBlank(int(text[end-1])) {
+	for end > 0 && util.IsBlank(int(text[end-1])) {
 		end--
 	}
 	return text[:end]

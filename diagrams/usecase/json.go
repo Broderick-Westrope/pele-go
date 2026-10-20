@@ -313,15 +313,11 @@ func locationAt(text common.Src, offset float64, line, column float64) (float64,
 	return line, column
 }
 
-func isASCIIWord(c byte) bool {
-	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
-}
-
 // boundaryAt is \b at byte i of s: JS's \b sees only ASCII word characters, and the bytes of
 // other characters are none.
 func boundaryAt(s string, i int) bool {
-	before := i > 0 && isASCIIWord(s[i-1])
-	after := i < len(s) && isASCIIWord(s[i])
+	before := i > 0 && util.IsWord(int(s[i-1]))
+	after := i < len(s) && util.IsWord(int(s[i]))
 	return before != after
 }
 

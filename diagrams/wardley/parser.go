@@ -4,6 +4,7 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
+	"github.com/Broderick-Westrope/pele-go/internal/util"
 )
 
 // Token kinds, in the order of wardleyTokens.
@@ -49,15 +50,9 @@ const (
 	tNewline
 )
 
-func isDigit(c int) bool  { return c >= '0' && c <= '9' }
-func isLetter(c int) bool { return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' }
-
-// isWord is \w without the u flag.
-func isWord(c int) bool { return isDigit(c) || isLetter(c) || c == '_' }
-
 func digits(src common.Src, from int) int {
 	i := from
-	for isDigit(src.At(i)) {
+	for util.IsDigit(src.At(i)) {
 		i++
 	}
 	return i
@@ -135,7 +130,7 @@ func word(name, text string) *common.TokenType {
 func nameRun(src common.Src, i int) int {
 	for {
 		c := src.At(i)
-		if isLetter(c) || isDigit(c) || c == '_' || c == '(' || c == ')' || c == '&' || c == '-' && src.At(i+1) != '>' {
+		if util.IsLetter(c) || util.IsDigit(c) || c == '_' || c == '(' || c == ')' || c == '&' || c == '-' && src.At(i+1) != '>' {
 			i++
 			continue
 		}
@@ -151,7 +146,7 @@ func nameWithSpaces(src common.Src, at int) int {
 		src.HasPrefix(at, "accTitle") || src.HasPrefix(at, "accDescr") {
 		return -1
 	}
-	if !isLetter(src.At(at)) {
+	if !util.IsLetter(src.At(at)) {
 		return -1
 	}
 	end := nameRun(src, at+1)
@@ -160,7 +155,7 @@ func nameWithSpaces(src common.Src, at int) int {
 		for src.At(k) == ' ' || src.At(k) == '\t' {
 			k++
 		}
-		if k == end || !(isLetter(src.At(k)) || src.At(k) == '(') {
+		if k == end || !(util.IsLetter(src.At(k)) || src.At(k) == '(') {
 			return end
 		}
 		end = nameRun(src, k+1)
@@ -188,13 +183,13 @@ func intToken(src common.Src, at int) int {
 
 // idToken is /[\w]([-\w]*\w)?/y: it ends at the last word character of the run.
 func idToken(src common.Src, at int) int {
-	if !isWord(src.At(at)) {
+	if !util.IsWord(src.At(at)) {
 		return -1
 	}
 	end := at + 1
 	for i := at + 1; ; i++ {
 		c := src.At(i)
-		if isWord(c) {
+		if util.IsWord(c) {
 			end = i + 1
 		} else if c != '-' {
 			return end

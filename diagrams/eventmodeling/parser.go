@@ -3,14 +3,10 @@ package eventmodeling
 import (
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
+	"github.com/Broderick-Westrope/pele-go/internal/util"
 )
 
 func isLetter(c int) bool { return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '_' }
-func isDigit(c int) bool  { return c >= '0' && c <= '9' }
-func isSpace(c int) bool  { return c >= 0 && jsstr.IsSpace(rune(c)) }
-
-// isLineEnd is a JS line terminator, which . does not match.
-func isLineEnd(c int) bool { return c >= 0 && jsstr.IsLineEnd(rune(c)) }
 
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"
 
@@ -20,7 +16,7 @@ var emID = &common.TokenType{Name: "EM_ID", First: letters, Match: func(src comm
 		return -1
 	}
 	i := at + 1
-	for c := src.At(i); isLetter(c) || isDigit(c); c = src.At(i) {
+	for c := src.At(i); isLetter(c) || util.IsDigit(c); c = src.At(i) {
 		i++
 	}
 	return i
@@ -50,7 +46,7 @@ var words = []string{
 // lastOnLine returns the index of the last c after from and before the line ends, or -1.
 func lastOnLine(src common.Src, from int, c uint16) int {
 	last := -1
-	for i := from; i < len(src) && !isLineEnd(int(src[i])); i++ {
+	for i := from; i < len(src) && !util.IsLineEnd(int(src[i])); i++ {
 		if src[i] == c {
 			last = i
 		}
@@ -85,7 +81,7 @@ func lineEndOrSpace(src common.Src, i int) int {
 	if src.At(i) == '\n' {
 		return i + 1
 	}
-	if i >= len(src) || isSpace(src.At(i)) {
+	if i >= len(src) || util.IsSpace(src.At(i)) {
 		return i
 	}
 	return -1
@@ -129,7 +125,7 @@ var dataBlock = &common.TokenType{Name: "EM_DATA_BLOCK", First: "{", Match: func
 // emWS is /\s+/y.
 var emWS = &common.TokenType{Name: "EM_WS", First: "\t\n\v\f\r ", Hidden: true, Match: func(src common.Src, at int) int {
 	i := at
-	for isSpace(src.At(i)) {
+	for util.IsSpace(src.At(i)) {
 		i++
 	}
 	if i == at {
@@ -182,7 +178,7 @@ var emLexer = func() *common.Lexer {
 		emID,
 		&common.TokenType{Name: "EM_FID", First: "0123456789", Match: func(src common.Src, at int) int {
 			i := at
-			for i < at+3 && isDigit(src.At(i)) {
+			for i < at+3 && util.IsDigit(src.At(i)) {
 				i++
 			}
 			if i == at {

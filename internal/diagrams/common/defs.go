@@ -9,13 +9,9 @@ import (
 )
 
 func isLineBreak(c int) bool { return c == '\n' || c == '\r' }
-func isBlank(c int) bool     { return c == ' ' || c == '\t' }
-
-// isSpace is \s on one code unit.
-func isSpace(c int) bool { return c >= 0 && jsstr.IsSpace(rune(c)) }
 
 func skipBlanks(src Src, i int) int {
-	for isBlank(src.At(i)) {
+	for util.IsBlank(src.At(i)) {
 		i++
 	}
 	return i
@@ -47,7 +43,7 @@ var AccDescr = &TokenType{Name: "ACC_DESCR", First: "\t a", Match: func(src Src,
 		return lineRest(src, j+1)
 	}
 	j := i
-	for isSpace(src.At(j)) {
+	for util.IsSpace(src.At(j)) {
 		j++
 	}
 	if src.At(j) != '{' {
@@ -79,7 +75,7 @@ var Title = &TokenType{Name: "TITLE", First: "\t t", Match: func(src Src, at int
 		return -1
 	}
 	i += len("title")
-	if isBlank(src.At(i)) {
+	if util.IsBlank(src.At(i)) {
 		return lineRest(src, i+1)
 	}
 	return i
@@ -137,7 +133,7 @@ func lineEndOrSpace(src Src, i int) int {
 	if src.At(i) == '\n' {
 		return i + 1
 	}
-	if i >= len(src) || isSpace(src.At(i)) {
+	if i >= len(src) || util.IsSpace(src.At(i)) {
 		return i
 	}
 	return -1
@@ -216,7 +212,7 @@ func Keyword(word string) *TokenType {
 			return -1
 		}
 		end := at + len(word)
-		if src.HasPrefix(end, "%%") || end >= len(src) || isSpace(src.At(end)) {
+		if src.HasPrefix(end, "%%") || end >= len(src) || util.IsSpace(src.At(end)) {
 			return end
 		}
 		return -1

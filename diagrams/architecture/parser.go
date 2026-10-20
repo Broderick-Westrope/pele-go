@@ -5,6 +5,7 @@ import (
 
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
+	"github.com/Broderick-Westrope/pele-go/internal/util"
 )
 
 // Token kinds, in the order of architectureTokens.
@@ -37,17 +38,13 @@ const (
 	kindLabel
 )
 
-func isWordUnit(c int) bool {
-	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_'
-}
-
 // idToken is /[\w]([-\w]*\w)?/y.
 var idToken = &common.TokenType{Name: "ID", Match: func(src common.Src, at int) int {
-	if !isWordUnit(src.At(at)) {
+	if !util.IsWord(src.At(at)) {
 		return -1
 	}
 	end := at + 1
-	for i := end; isWordUnit(src.At(i)) || src.At(i) == '-'; i++ {
+	for i := end; util.IsWord(src.At(i)) || src.At(i) == '-'; i++ {
 		if src.At(i) != '-' {
 			end = i + 1
 		}
@@ -130,7 +127,7 @@ var architectureLexer = common.NewLexer([]*common.TokenType{
 			return -1
 		}
 		i := at + 1
-		for c := src.At(i); isWordUnit(c) || c == '-' || c == ':'; c = src.At(i) {
+		for c := src.At(i); util.IsWord(c) || c == '-' || c == ':'; c = src.At(i) {
 			i++
 		}
 		if i == at+1 || src.At(i) != ')' {

@@ -26,10 +26,6 @@ const (
 
 var days = [...]string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
 
-func isWordChar(c int) bool {
-	return c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '_'
-}
-
 func skipSpace(src common.Src, p int) int {
 	for util.IsSpace(src.At(p)) {
 		p++
@@ -65,7 +61,7 @@ func containsUnit(set string, c uint16) bool {
 
 // keywordWord matches /word\b/iy.
 func keywordWord(src common.Src, p int, word string) int {
-	if !common.WordAt(src, p, word) || isWordChar(src.At(p+len(word))) {
+	if !common.WordAt(src, p, word) || util.IsWord(src.At(p+len(word))) {
 		return -1
 	}
 	return p + len(word)
@@ -102,7 +98,7 @@ func dayAfter(src common.Src, p int, word string, choices []string) (int, int) {
 		return -1, -1
 	}
 	for i, day := range choices {
-		if common.WordAt(src, e, day) && !isWordChar(src.At(e+len(day))) {
+		if common.WordAt(src, e, day) && !util.IsWord(src.At(e+len(day))) {
 			return e + len(day), i
 		}
 	}
@@ -223,7 +219,7 @@ func tokenize(src common.Src) tokens {
 				return false
 			}
 		}
-		return !isWordChar(src.At(p + 10))
+		return !util.IsWord(src.At(p + 10))
 	}
 
 	for {
