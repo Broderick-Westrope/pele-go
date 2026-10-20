@@ -214,7 +214,7 @@ func renderKanban(model *kanbanDb, config *jsobj.Object, rc *core.Context) core.
 	}
 	cardWidth := columnWidth - 2*columnPad
 	textWidth := cardWidth - 2*cardPad
-	glyph := small * 1.25
+	glyph := float64(small * 1.25)
 	links := []core.Link{}
 
 	sections := model.sections
