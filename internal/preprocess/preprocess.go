@@ -236,10 +236,9 @@ func Merge(target, source *jsobj.Object) *jsobj.Object {
 }
 
 var (
-	reCRLF     = regexp.MustCompile(`\r\n?`)
-	reHTMLTag  = regexp.MustCompile(`<(\w+)([^>]*)>`)
-	reAttr     = regexp.MustCompile(`="([^"]*)"`)
-	errNoMatch = -1
+	reCRLF    = regexp.MustCompile(`\r\n?`)
+	reHTMLTag = regexp.MustCompile(`<(\w+)([^>]*)>`)
+	reAttr    = regexp.MustCompile(`="([^"]*)"`)
 )
 
 // Preprocess prepares source for detection and parsing.
@@ -249,7 +248,7 @@ func Preprocess(source string) Preprocessed {
 		text = reCRLF.ReplaceAllString(text, "\n")
 	}
 	// A tag needs a closing bracket, so nothing after the last one can match.
-	lastClose := errNoMatch
+	lastClose := -1
 	if strings.Contains(text, "<") {
 		lastClose = strings.LastIndex(text, ">")
 	}

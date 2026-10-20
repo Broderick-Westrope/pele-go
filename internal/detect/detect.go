@@ -23,10 +23,8 @@ func isWord(c byte) bool {
 	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
 }
 
-// afterSpace returns cleaned without the whitespace ^\s* matches.
-func afterSpace(cleaned string) string {
-	return jsstr.TrimStart(cleaned)
-}
+// afterSpace is what follows the whitespace ^\s* matches.
+var afterSpace = jsstr.TrimStart
 
 // hasPrefixFold compares ASCII letters without case, as a non-unicode /i regex does.
 func hasPrefixFold(s, prefix string) bool {
