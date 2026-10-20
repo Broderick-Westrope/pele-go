@@ -56,6 +56,17 @@ func Throw(e *Error) {
 	panic(e)
 }
 
+// RangeError stands for a JS RangeError: a stack overflow, or a built-in such as
+// String.fromCodePoint rejecting its argument. Upstream reports every RangeError as the
+// limit error "Diagram is nested too deeply.", tagged with the diagram type when one was
+// detected, and the core does the same with this.
+type RangeError struct{}
+
+// ThrowRange panics with a RangeError.
+func ThrowRange() {
+	panic(RangeError{})
+}
+
 // Location is a position in a source, as upstream's locate() computes it.
 type Location struct {
 	Line    int
