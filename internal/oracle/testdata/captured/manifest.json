@@ -1,11 +1,18 @@
 {
+ "suite": {
+  "files": 943,
+  "passed": 6710,
+  "failing": [
+   "le-1.7.0/tests/entries.test.ts > core without the full entry point loads a type the first time it is needed"
+  ]
+ },
  "calls": 191723,
  "unique": 179345,
  "replayable": 179329,
  "unsupported": {
-  "option of type function": 14,
   "model not returned by parse": 1,
-  "option of type object": 1
+  "option of type object": 1,
+  "option of type function": 14
  },
  "byType": {
   "agentflow": 7736,

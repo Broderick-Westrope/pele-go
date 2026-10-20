@@ -1,23 +1,36 @@
 // Runs upstream's Vitest suite with scripts/capture/capture-setup.ts and writes every
 // public parse() and render() call it made to internal/oracle/testdata/captured/<type>.jsonl.gz,
-// one file per detected diagram type, with a manifest that counts what could not be replayed.
+// one file per detected diagram type, with a manifest.
+//
+// The capture is checked before anything is written: every test file must have run, the
+// tests that fail with capture on must be the ones the manifest already allows, no fewer
+// tests may pass than last time, and no more calls may be unreplayable. A first capture
+// records these as the baseline.
 //
 // Usage: node scripts/capture-cases.mjs <pele checkout at 1.7.0, with npm ci run>
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { gzipSync } from 'node:zlib';
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+import { gzipSync } from 'node:zlib';
 
 const [, , peleDir] = process.argv;
 if (!peleDir) throw new Error('usage: capture-cases.mjs <pele checkout>');
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const testdata = join(here, '../internal/oracle/testdata');
+const out = join(testdata, 'captured');
 const setup = join(peleDir, 'tests/support/__capture-setup.ts');
 const config = join(peleDir, 'vitest.capture.config.ts');
 const dir = mkdtempSync(join(tmpdir(), 'pele-capture-'));
+const report = join(dir, 'vitest.json');
+
+function fail(message) {
+  console.error(`capture rejected: ${message}`);
+  process.exit(1);
+}
 
 copyFileSync(join(here, 'capture/capture-setup.ts'), setup);
 writeFileSync(
@@ -30,21 +43,41 @@ export default mergeConfig(base, defineConfig({
 `
 );
 try {
-  // Upstream tests may fail once calls are wrapped (a fixed clock, for one); only the calls matter.
-  execFileSync('npx', ['vitest', 'run', '--config', config, '--reporter=dot'], {
+  execFileSync('npx', ['vitest', 'run', '--config', config, '--reporter=dot', '--reporter=json', `--outputFile.json=${report}`], {
     cwd: peleDir,
     env: { ...process.env, PELE_CAPTURE_DIR: dir },
     stdio: 'inherit',
   });
 } catch {
-  console.error('some upstream tests failed with capture on; continuing');
+  // Judged from the report below.
 } finally {
   rmSync(setup);
   rmSync(config);
 }
 
+let baseline;
+try {
+  baseline = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8'));
+} catch {
+  baseline = undefined;
+}
+
+const results = JSON.parse(readFileSync(report, 'utf8'));
+const unloaded = results.testResults.filter((f) => f.status === 'failed' && f.assertionResults.length === 0);
+if (unloaded.length > 0) fail(`test files did not run: ${unloaded.map((f) => f.name).join(', ')}`);
+const failing = results.testResults
+  .flatMap((f) => f.assertionResults.filter((a) => a.status === 'failed').map((a) => `${f.name.slice(peleDir.length)} > ${a.fullName}`))
+  .sort();
+const suite = { files: results.numTotalTestSuites, passed: results.numPassedTests, failing };
+if (baseline?.suite) {
+  const allowed = new Set(baseline.suite.failing);
+  const unexpected = failing.filter((name) => !allowed.has(name));
+  if (unexpected.length > 0) fail(`tests failed that the baseline allows to pass:\n  ${unexpected.join('\n  ')}`);
+  if (suite.files < baseline.suite.files) fail(`${suite.files} test files ran, the baseline had ${baseline.suite.files}`);
+  if (suite.passed < baseline.suite.passed) fail(`${suite.passed} tests passed, the baseline had ${baseline.suite.passed}`);
+}
+
 // Shard by detected diagram type, so each type's cases can be committed when it is ported.
-const vm = await import('node:vm');
 vm.runInThisContext(readFileSync(join(testdata, 'pele.global.js'), 'utf8'));
 const typeOf = (src) => {
   try {
@@ -56,8 +89,8 @@ const typeOf = (src) => {
 
 const seen = new Set();
 const shards = {};
-const manifest = { calls: 0, unique: 0, replayable: 0, unsupported: {}, byType: {} };
-for (const file of readdirSync(dir).sort()) {
+const manifest = { suite, calls: 0, unique: 0, replayable: 0, unsupported: {}, byType: {} };
+for (const file of readdirSync(dir).filter((f) => f.endsWith('.jsonl')).sort()) {
   for (const line of readFileSync(join(dir, file), 'utf8').split('\n')) {
     if (!line) continue;
     manifest.calls++;
@@ -69,33 +102,29 @@ for (const file of readdirSync(dir).sort()) {
       manifest.unsupported[reason] = (manifest.unsupported[reason] ?? 0) + 1;
       continue;
     }
-    const type = typeOf(record.src ?? record.parse.src);
-    (shards[type] ??= []).push(line);
+    (shards[typeOf(record.src ?? record.parse.src)] ??= []).push(line);
   }
 }
 manifest.unique = seen.size;
-rmSync(dir, { recursive: true });
-const out = join(testdata, 'captured');
-mkdirSync(out, { recursive: true });
+
+// Calls that cannot be replayed are a gap in the parity gate. More of them than last time
+// fails the capture instead of quietly narrowing the gate.
+const total = (m) => Object.values(m.unsupported).reduce((a, b) => a + b, 0);
+if (baseline && total(manifest) > total(baseline)) fail(`unreplayable calls rose from ${total(baseline)} to ${total(manifest)}`);
+if (baseline && manifest.calls < baseline.calls) fail(`${manifest.calls} calls captured, the baseline had ${baseline.calls}`);
+
+// Publish only now that the capture has been checked.
+const staged = join(dir, 'staged');
+mkdirSync(staged);
 for (const [type, lines] of Object.entries(shards).sort()) {
   lines.sort();
   manifest.replayable += lines.length;
   manifest.byType[type] = lines.length;
-  writeFileSync(join(out, `${type}.jsonl.gz`), gzipSync(lines.join('\n') + '\n', { level: 9 }));
+  writeFileSync(join(staged, `${type}.jsonl.gz`), gzipSync(lines.join('\n') + '\n', { level: 9 }));
 }
-// Calls that cannot be replayed are a gap in the parity gate. More of them than last time
-// fails the capture instead of quietly narrowing the gate.
-const total = (m) => Object.values(m.unsupported).reduce((a, b) => a + b, 0);
-const manifestPath = join(out, 'manifest.json');
-let baseline;
-try {
-  baseline = JSON.parse(readFileSync(manifestPath, 'utf8'));
-} catch {
-  baseline = undefined;
-}
-writeFileSync(manifestPath, JSON.stringify(manifest, null, 1) + '\n');
-console.log(manifest);
-if (baseline && total(manifest) > total(baseline)) {
-  console.error(`unreplayable calls rose from ${total(baseline)} to ${total(manifest)}`);
-  process.exit(1);
-}
+writeFileSync(join(staged, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
+mkdirSync(out, { recursive: true });
+for (const file of readdirSync(out).filter((f) => f.endsWith('.jsonl.gz'))) rmSync(join(out, file));
+for (const file of readdirSync(staged)) renameSync(join(staged, file), join(out, file));
+rmSync(dir, { recursive: true });
+console.log({ ...manifest, suite: { ...suite, failing: failing.length } });
