@@ -31,7 +31,8 @@ const UpstreamVersion = "1.7.0"
 // upstream does with no options. Pointer fields are unset when nil, so that a zero value can
 // be told from no value; set them with Ptr. The fields are:
 //
-//   - Measurer measures label text. Nil means the measurer DefaultMeasurer returns.
+//   - Measurer measures label text. Nil means the measurer DefaultMeasurer returns. It must
+//     be safe for concurrent use and must not panic; see TextMeasurer.
 //   - FontFamily and FontFamilyMono are the CSS font families the SVG names where the page
 //     sets no --pele-font or --pele-font-mono. Nil means sans-serif and monospace.
 //   - FontSize is the label size in pixels. Nil means 16.
@@ -54,7 +55,8 @@ const UpstreamVersion = "1.7.0"
 //   - Links and Images, when false, drop every link or image. Nil means true.
 //   - LinkRel is the rel attribute of links. Nil means "noopener"; "" omits it.
 //   - Icons returns SVG markup for an icon name, or "" when the host has none. It must be
-//     safe for concurrent use if Render is called concurrently with it.
+//     safe for concurrent use if Render is called concurrently with it, and must not panic:
+//     Render recovers a panic in it as a CodeInternal error, but the render is lost.
 //   - Config is Mermaid configuration from the host, made with ParseConfig. The diagram's
 //     own front matter and directives win over it, key by key at the top level.
 //   - Now is the time gantt charts treat as now. The zero time means the current time.
@@ -122,13 +124,19 @@ type DiagramType string
 //   - Snippet is the offending line with a caret under the column, or "".
 //
 // An Error with CodeCanceled wraps the context's error, so errors.Is(err,
-// context.DeadlineExceeded) works.
+// context.DeadlineExceeded) works. An Error with CodeInternal wraps a *PanicError.
 type Error = perr.Error
+
+// PanicError is what an Error with CodeInternal wraps: a panic Render recovered that was
+// not one of its own errors, from a bug in this package or from the host's TextMeasurer or
+// Options.Icons. Value is the panic value and Stack the panicking goroutine's stack.
+// Unwrap returns Value when it is an error.
+type PanicError = perr.PanicError
 
 // ErrorCode classifies an Error.
 type ErrorCode = perr.Code
 
-// The error codes. All but CodeCanceled are upstream's.
+// The error codes. All but CodeCanceled and CodeInternal are upstream's.
 const (
 	// CodeUnsupportedDiagram reports source of no known or no registered diagram type.
 	CodeUnsupportedDiagram = perr.UnsupportedDiagram
@@ -142,6 +150,9 @@ const (
 	// CodeCanceled reports a render stopped by its context. The Error wraps the context's
 	// error.
 	CodeCanceled = perr.Canceled
+	// CodeInternal reports a panic during the render that was not one of its errors. The
+	// Error wraps a *PanicError, and its message names the panic value.
+	CodeInternal = perr.Internal
 )
 
 // TextMeasurer measures the advance width of text in pixels:
@@ -151,7 +162,8 @@ const (
 // size is the font size in pixels and style the emphasis the text is drawn with. text may
 // hold lone surrogates, encoded as UTF-8 would encode their code points. Output is
 // byte-identical to upstream's only when the two measurers return the same widths.
-// Implementations must be safe for concurrent use.
+// Implementations must be safe for concurrent use and must not panic: Render recovers a
+// panic in Width as a CodeInternal error, but the render is lost.
 type TextMeasurer = text.Measurer
 
 // Style is a set of emphasis bits passed to a TextMeasurer.
@@ -184,7 +196,8 @@ func Register(diagrams ...*Diagram) {
 }
 
 // Render renders Mermaid source to SVG. Failures are returned as *Error. Render is safe for
-// concurrent use. Strings in the result and in errors are valid UTF-8.
+// concurrent use. Strings in the result and in errors are valid UTF-8. A nil ctx is
+// context.Background().
 func Render(ctx context.Context, source string, opts Options) (Result, error) {
 	res, err := core.Render(ctx, source, opts)
 	if err != nil {

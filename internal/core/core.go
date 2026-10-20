@@ -4,6 +4,7 @@ package core
 
 import (
 	"context"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,7 +21,8 @@ import (
 // Options are the render options. Pointer fields are unset when nil, so a zero value can be
 // told from no value, as upstream tells undefined from 0 or "".
 type Options struct {
-	// Measurer measures label text. Nil uses the built-in Arial table.
+	// Measurer measures label text. Nil uses the built-in Arial table. It must be safe for
+	// concurrent use and must not panic.
 	Measurer       text.Measurer
 	FontFamily     *string
 	FontFamilyMono *string
@@ -47,7 +49,8 @@ type Options struct {
 	Links        *bool
 	Images       *bool
 	LinkRel      *string
-	// Icons returns SVG markup for an icon name, or "" when the host has none.
+	// Icons returns SVG markup for an icon name, or "" when the host has none. It must be
+	// safe for concurrent use and must not panic.
 	Icons func(name string) string
 	// Now is the time gantt charts treat as now. The zero time means the current time.
 	Now time.Time
@@ -282,7 +285,8 @@ func tagErrors(found detect.Detected, fn func()) {
 }
 
 // recoverInto turns a thrown error into err, as upstream's guarded() does at the edge of
-// the public API.
+// the public API. Any other panic, from a bug or from the host's measurer or icon resolver,
+// becomes an Internal error rather than crash the host.
 func recoverInto(err *error) {
 	r := recover()
 	if r == nil {
@@ -295,8 +299,16 @@ func recoverInto(err *error) {
 	case perr.RangeError:
 		*err = perr.New("Diagram is nested too deeply.", perr.Limit)
 	default:
-		panic(r)
+		*err = perr.Panic(r, debug.Stack())
 	}
+}
+
+// orBackground returns ctx, or context.Background() for a nil ctx.
+func orBackground(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return ctx
 }
 
 // Parsed is a parsed diagram, ready to render.
@@ -306,8 +318,10 @@ type Parsed struct {
 
 // Parse parses source with the options read at parse time (Limit, MaxEdges, Config), as
 // upstream's parse() does. Render options given to RenderParsed later do not change them.
+// A nil ctx is context.Background().
 func Parse(ctx context.Context, source string, opts Options) (res *Parsed, err error) {
 	defer recoverInto(&err)
+	ctx = orBackground(ctx)
 	checkContext(ctx)
 	return &Parsed{p: parseSource(ctx, jsstr.Normalize(source), opts)}, nil
 }
@@ -321,9 +335,11 @@ func Render(ctx context.Context, source string, opts Options) (Result, error) {
 	return RenderParsed(ctx, parsed, opts)
 }
 
-// RenderParsed renders a diagram Parse returned, as upstream's render(model) does.
+// RenderParsed renders a diagram Parse returned, as upstream's render(model) does. A nil ctx
+// is context.Background().
 func RenderParsed(ctx context.Context, parsed *Parsed, opts Options) (res Result, err error) {
 	defer recoverInto(&err)
+	ctx = orBackground(ctx)
 	p := parsed.p
 
 	section := p.diagram.Section

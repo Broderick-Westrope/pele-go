@@ -11,13 +11,15 @@ import (
 // Code classifies an Error.
 type Code string
 
-// The codes upstream uses, plus Canceled for a render stopped through its context.
+// The codes upstream uses, plus Canceled for a render stopped through its context and
+// Internal for a panic that was not an Error.
 const (
 	UnsupportedDiagram Code = "unsupported-diagram"
 	Syntax             Code = "syntax"
 	Semantic           Code = "semantic"
 	Limit              Code = "limit"
 	Canceled           Code = "canceled"
+	Internal           Code = "internal"
 )
 
 // Error is a failure to parse or render a diagram. Line and Column are 1-based and count
@@ -37,7 +39,8 @@ type Error struct {
 
 func (e *Error) Error() string { return e.Message }
 
-// Unwrap returns the context error of a Canceled error.
+// Unwrap returns the context error of a Canceled error, or the *PanicError of an Internal
+// one.
 func (e *Error) Unwrap() error { return e.err }
 
 // New returns an Error with no position.
@@ -48,6 +51,29 @@ func New(message string, code Code) *Error {
 // Cancel returns the Error for a render stopped by its context.
 func Cancel(cause error) *Error {
 	return &Error{Code: Canceled, Message: "Render canceled: " + cause.Error(), err: cause}
+}
+
+// PanicError is a panic recovered during a render that was not an Error: a bug in the port,
+// or a panic in a host's measurer or icon resolver.
+type PanicError struct {
+	// Value is what was passed to panic.
+	Value any
+	// Stack is the stack of the goroutine that panicked, as runtime/debug.Stack writes it.
+	Stack []byte
+}
+
+func (p *PanicError) Error() string { return fmt.Sprintf("panic: %v", p.Value) }
+
+// Unwrap returns Value when it is an error.
+func (p *PanicError) Unwrap() error {
+	err, _ := p.Value.(error)
+	return err
+}
+
+// Panic returns the Internal Error for a recovered panic value and its stack.
+func Panic(value any, stack []byte) *Error {
+	cause := &PanicError{Value: value, Stack: stack}
+	return &Error{Code: Internal, Message: fmt.Sprintf("Render panicked: %v", value), err: cause}
 }
 
 // Throw panics with e. Parsers report errors this way, as upstream throws them; the core

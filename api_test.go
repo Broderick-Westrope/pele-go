@@ -136,3 +136,65 @@ func TestDefaultMeasurerIsWhatANilMeasurerUses(t *testing.T) {
 		t.Fatalf("DefaultMeasurer().Width = %v, want a positive width", w)
 	}
 }
+
+type panickingMeasurer struct{}
+
+func (panickingMeasurer) Width(string, float64, pele.Style) float64 { panic("measurer exploded") }
+
+func TestPanicsInHostCodeBecomeInternalErrors(t *testing.T) {
+	tests := map[string]struct {
+		src  string
+		opts pele.Options
+		want string
+	}{
+		"measurer": {
+			src:  "flowchart LR\n  A --> B",
+			opts: pele.Options{Measurer: panickingMeasurer{}},
+			want: "measurer exploded",
+		},
+		"icons": {
+			src:  "architecture-beta\n  service db(database)[Database]",
+			opts: pele.Options{Icons: func(string) string { panic(errors.New("icons exploded")) }},
+			want: "icons exploded",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := pele.Render(context.Background(), tc.src, tc.opts)
+			var pe *pele.Error
+			if !errors.As(err, &pe) || pe.Code != pele.CodeInternal {
+				t.Fatalf("Render error = %v, want a %s *pele.Error", err, pele.CodeInternal)
+			}
+			if !strings.Contains(pe.Message, tc.want) {
+				t.Errorf("message %q does not name the panic value %q", pe.Message, tc.want)
+			}
+			var panicErr *pele.PanicError
+			if !errors.As(err, &panicErr) {
+				t.Fatalf("Render error = %v, want it to wrap a *pele.PanicError", err)
+			}
+			if !strings.Contains(string(panicErr.Stack), "api_test.go") {
+				t.Errorf("stack does not reach the panic site in this file:\n%s", panicErr.Stack)
+			}
+		})
+	}
+}
+
+func TestPanicErrorUnwrapsAPanickedError(t *testing.T) {
+	sentinel := errors.New("icons exploded")
+	_, err := pele.Render(context.Background(), "architecture-beta\n  service db(database)[Database]",
+		pele.Options{Icons: func(string) string { panic(sentinel) }})
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("Render error = %v, want it to wrap the panicked error", err)
+	}
+}
+
+func TestRenderTreatsANilContextAsBackground(t *testing.T) {
+	var ctx context.Context
+	res, err := pele.Render(ctx, "info", pele.Options{})
+	if err != nil {
+		t.Fatalf("Render with a nil context: %v", err)
+	}
+	if res.Type != "info" {
+		t.Fatalf("Render with a nil context: type %q, want info", res.Type)
+	}
+}

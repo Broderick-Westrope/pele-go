@@ -95,7 +95,7 @@ res, err := pele.Render(ctx, src, pele.Options{Measurer: m})
 `fontmeasure` sums glyph advances and kerning at 1024 ppem, measures a missing glyph as
 `n`, and takes `fontmeasure.WithMono(...)` for code spans. It embeds no fonts, and it's the
 only package that pulls in `golang.org/x/image`. You can also implement `pele.TextMeasurer`
-yourself; it must be safe for concurrent use.
+yourself; it must be safe for concurrent use and must not panic (as must `Options.Icons`).
 
 ### Errors
 
@@ -115,6 +115,7 @@ if errors.As(err, &pe) {
 | `CodeSemantic` | It parses but asks for something that doesn't exist |
 | `CodeLimit` | Past `Limit`, `OutputLimit` or `MaxEdges`, or nested too deeply |
 | `CodeCanceled` | The context was done (Go only, see below) |
+| `CodeInternal` | A panic during the render: a bug, or your `TextMeasurer` or `Icons` panicked (Go only). It wraps a `*pele.PanicError` with the value and stack |
 
 Messages, lines and columns are upstream's. Columns count UTF-16 code units, as upstream's
 do.
