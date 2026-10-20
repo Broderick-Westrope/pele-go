@@ -13,6 +13,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
 )
@@ -1736,34 +1737,6 @@ func emptyRanks(g *graph) []uint8 {
 	return empty
 }
 
-// hypot is V8's Math.hypot, which sums the squares with Kahan compensation after scaling by
-// the largest argument, and so can differ from math.Hypot in the last bit.
-func hypot(a, b float64) float64 {
-	if math.IsNaN(a) || math.IsNaN(b) {
-		if math.IsInf(a, 0) || math.IsInf(b, 0) {
-			return math.Inf(1)
-		}
-		return math.NaN()
-	}
-	x, y := math.Abs(a), math.Abs(b)
-	most := max(x, y)
-	if math.IsInf(most, 1) {
-		return most
-	}
-	if most == 0 {
-		return 0
-	}
-	sum, compensation := 0.0, 0.0
-	for _, v := range [2]float64{x, y} {
-		n := v / most
-		summand := float64(n*n) - compensation
-		preliminary := sum + summand
-		compensation = (preliminary - sum) - summand
-		sum = preliminary
-	}
-	return math.Sqrt(sum) * most
-}
-
 // assignTracks gives every piece that does not run straight down a track across its gap, and
 // counts the tracks of each gap. Two pieces in one gap share a track only where they cannot be
 // mistaken for each other: where they do not overlap, or where they leave from or arrive at the
@@ -1977,7 +1950,7 @@ func assignTracks(ctx context.Context, pc *pieces, trackCount []int, curved bool
 					den = 1
 				}
 				t := max(0, min(1, (float64((px-line[2*j])*dx)+float64((py-line[2*j+1])*dy))/den))
-				d := hypot(px-line[2*j]-float64(t*dx), py-line[2*j+1]-float64(t*dy))
+				d := jsmath.Hypot(px-line[2*j]-float64(t*dx), py-line[2*j+1]-float64(t*dy))
 				if d < least {
 					least = d
 				}

@@ -1,4 +1,4 @@
-package layout
+package layout_test
 
 import (
 	"bufio"
@@ -9,12 +9,13 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 )
 
-// TestHypotMatchesV8 checks hypot against the Math.hypot results in the fixture. It is an
-// internal test because hypot is unexported, and a layout only shows a wrong last bit in it
-// when two curves pass at just the distance that decides whether they need levels.
+// TestHypotMatchesV8 checks jsmath.Hypot against the Math.hypot results layout records in its
+// fixture: a layout only shows a wrong last bit when two curves pass at just the distance that
+// decides whether they need levels.
 func TestHypotMatchesV8(t *testing.T) {
 	f, err := os.Open("testdata/cases.jsonl.gz")
 	if err != nil {
@@ -48,7 +49,7 @@ func TestHypotMatchesV8(t *testing.T) {
 		}
 		for _, in := range c.Input {
 			a, b := parse(in[0]), parse(in[1])
-			if got := jsnum.Format(hypot(a, b)); got != in[2] {
+			if got := jsnum.Format(jsmath.Hypot(a, b)); got != in[2] {
 				t.Errorf("hypot(%s, %s) = %s, want %s", in[0], in[1], got, in[2])
 			}
 			if jsnum.Format(math.Hypot(a, b)) != in[2] {
