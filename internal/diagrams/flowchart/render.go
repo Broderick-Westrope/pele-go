@@ -118,7 +118,7 @@ func draw(db *FlowDb, config *jsobj.Object, rc *core.Context, variant *FlowVaria
 	}
 	curveValue, _ := flow.Get("curve")
 	curve, curveIsString := curveValue.(string)
-	graph := BuildFlowGraph(db, curve)
+	graph := buildFlowGraph(db, curve)
 	if variant != nil {
 		variant.Prepare(graph)
 	}

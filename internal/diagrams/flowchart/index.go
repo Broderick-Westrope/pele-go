@@ -21,10 +21,10 @@ func Parse(source string, config *jsobj.Object, title *string, _ int, limits cor
 		v, _ := flow.Get("inheritDir")
 		inheritDir = v == true
 	}
-	db := NewFlowDb(FlowDbOptions{InheritDir: inheritDir, MaxEdges: limits.MaxEdges})
+	db := newFlowDb(flowDbOptions{InheritDir: inheritDir, MaxEdges: limits.MaxEdges})
 	if title != nil && *title != "" {
 		db.Title = *title
 	}
-	ParseFlowchart(source, db)
+	parseFlowchart(source, db)
 	return db
 }

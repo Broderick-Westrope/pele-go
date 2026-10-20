@@ -221,7 +221,7 @@ func (p *parser) vertex() string {
 		p.i++
 		label := p.text()
 		p.closed(b.end)
-		db.AddVertex(id, label, b.shape, nil, nil)
+		db.addVertex(id, label, b.shape, nil, nil)
 		return id
 	}
 	switch open {
@@ -232,11 +232,11 @@ func (p *parser) vertex() string {
 			label := p.text()
 			p.closed(tPe)
 			p.expect(tPe, "")
-			db.AddVertex(id, label, "circle", nil, nil)
+			db.addVertex(id, label, "circle", nil, nil)
 		} else {
 			label := p.text()
 			p.closed(tPe)
-			db.AddVertex(id, label, "round", nil, nil)
+			db.addVertex(id, label, "round", nil, nil)
 		}
 	case tVertexWithPropsStart:
 		p.i++
@@ -247,7 +247,7 @@ func (p *parser) vertex() string {
 		label := p.text()
 		p.closed(tSqe)
 		// Upstream also records the property, which nothing reads.
-		db.AddVertex(id, label, "rect", nil, nil)
+		db.addVertex(id, label, "rect", nil, nil)
 	case tDiamondStart:
 		p.i++
 		if p.kind() == tDiamondStart {
@@ -255,34 +255,34 @@ func (p *parser) vertex() string {
 			label := p.text()
 			p.closed(tDiamondStop)
 			p.expect(tDiamondStop, "")
-			db.AddVertex(id, label, "hexagon", nil, nil)
+			db.addVertex(id, label, "hexagon", nil, nil)
 		} else {
 			label := p.text()
 			p.closed(tDiamondStop)
-			db.AddVertex(id, label, "diamond", nil, nil)
+			db.addVertex(id, label, "diamond", nil, nil)
 		}
 	case tTrapstart:
 		p.i++
 		label := p.text()
 		if p.kind() == tInvtrapend {
 			p.i++
-			db.AddVertex(id, label, "lean_right", nil, nil)
+			db.addVertex(id, label, "lean_right", nil, nil)
 		} else {
 			p.closed(tTrapend)
-			db.AddVertex(id, label, "trapezoid", nil, nil)
+			db.addVertex(id, label, "trapezoid", nil, nil)
 		}
 	case tInvtrapstart:
 		p.i++
 		label := p.text()
 		if p.kind() == tTrapend {
 			p.i++
-			db.AddVertex(id, label, "lean_left", nil, nil)
+			db.addVertex(id, label, "lean_left", nil, nil)
 		} else {
 			p.closed(tInvtrapend)
-			db.AddVertex(id, label, "inv_trapezoid", nil, nil)
+			db.addVertex(id, label, "inv_trapezoid", nil, nil)
 		}
 	default:
-		db.AddVertex(id, nil, "", nil, nil)
+		db.addVertex(id, nil, "", nil, nil)
 	}
 	return id
 }
@@ -291,7 +291,7 @@ func (p *parser) styledVertex() string {
 	id := p.vertex()
 	if p.kind() == tStyleSeparator {
 		p.i++
-		p.db.SetClass(id, p.idString())
+		p.db.setClass(id, p.idString())
 	}
 	return id
 }
@@ -325,7 +325,7 @@ func (p *parser) node() []string {
 		}
 		next := p.styledVertex()
 		if data != nil {
-			p.db.AddVertex(ids[len(ids)-1], nil, "", nil, data)
+			p.db.addVertex(ids[len(ids)-1], nil, "", nil, data)
 		}
 		ids = append(ids, next)
 	}
@@ -365,7 +365,7 @@ func (p *parser) link() *LinkInfo {
 func (p *parser) vertexStatement() []string {
 	stmt := p.node()
 	if p.pendingData != nil {
-		p.db.AddVertex(stmt[len(stmt)-1], nil, "", nil, p.pendingData)
+		p.db.addVertex(stmt[len(stmt)-1], nil, "", nil, p.pendingData)
 	}
 	nodes := stmt
 	for {
@@ -375,9 +375,9 @@ func (p *parser) vertexStatement() []string {
 		info := p.link()
 		next := p.node()
 		if p.pendingData != nil {
-			p.db.AddVertex(next[len(next)-1], nil, "", nil, p.pendingData)
+			p.db.addVertex(next[len(next)-1], nil, "", nil, p.pendingData)
 		}
-		p.db.AddLink(stmt, next, info)
+		p.db.addLink(stmt, next, info)
 		nodes = append(append([]string{}, next...), nodes...)
 		stmt = next
 	}
@@ -412,7 +412,7 @@ func (p *parser) linkStyleStatement() {
 	}
 	p.expect(tSpace, "")
 	if p.kind() != tInterpolate {
-		db.UpdateLink(positions, p.stylesOpt())
+		db.updateLink(positions, p.stylesOpt())
 		return
 	}
 	p.i++
@@ -421,32 +421,32 @@ func (p *parser) linkStyleStatement() {
 	if p.kind() == tSpace {
 		p.i++
 		styles := p.stylesOpt()
-		db.UpdateLinkInterpolate(positions, interpolate)
-		db.UpdateLink(positions, styles)
+		db.updateLinkInterpolate(positions, interpolate)
+		db.updateLink(positions, styles)
 	} else {
-		db.UpdateLinkInterpolate(positions, interpolate)
+		db.updateLinkInterpolate(positions, interpolate)
 	}
 }
 
 func (p *parser) linkTail(id, url string) {
 	db := p.db
 	if p.kind() != tSpace {
-		db.SetLink(id, url, "")
+		db.setLink(id, url, "")
 		return
 	}
 	p.i++
 	if p.kind() == tLinkTarget {
-		db.SetLink(id, url, p.take())
+		db.setLink(id, url, p.take())
 		return
 	}
 	tooltip := p.expect(tStr, "'LINK_TARGET'")
 	if p.kind() == tSpace {
 		p.i++
-		db.SetLink(id, url, p.expect(tLinkTarget, ""))
+		db.setLink(id, url, p.expect(tLinkTarget, ""))
 	} else {
-		db.SetLink(id, url, "")
+		db.setLink(id, url, "")
 	}
-	db.SetTooltip(id, tooltip)
+	db.setTooltip(id, tooltip)
 }
 
 func (p *parser) clickStatement() {
@@ -464,9 +464,9 @@ func (p *parser) clickStatement() {
 			t := p.expect(tStr, "")
 			tooltip = &t
 		}
-		db.SetClickEvent(id)
+		db.setClickEvent(id)
 		if tooltip != nil {
-			db.SetTooltip(id, *tooltip)
+			db.setTooltip(id, *tooltip)
 		}
 	case tHref:
 		p.i++
@@ -478,10 +478,10 @@ func (p *parser) clickStatement() {
 		if p.kind() == tSpace {
 			p.i++
 			tooltip := p.expect(tStr, "")
-			db.SetClickEvent(id)
-			db.SetTooltip(id, tooltip)
+			db.setClickEvent(id)
+			db.setTooltip(id, tooltip)
 		} else {
-			db.SetClickEvent(id)
+			db.setClickEvent(id)
 		}
 	}
 }
@@ -521,7 +521,7 @@ func (p *parser) statement() (docItem, bool) {
 		p.expect(tSpace, "")
 		id := p.idString()
 		p.expect(tSpace, "")
-		db.AddVertex(id, nil, "", p.stylesOpt(), nil)
+		db.addVertex(id, nil, "", p.stylesOpt(), nil)
 		p.separator()
 		return docItem{}, false
 	case tLinkstyle:
@@ -533,7 +533,7 @@ func (p *parser) statement() (docItem, bool) {
 		p.expect(tSpace, "")
 		id := p.idString()
 		p.expect(tSpace, "")
-		db.AddClass(id, p.stylesOpt())
+		db.addClass(id, p.stylesOpt())
 		p.separator()
 		return docItem{}, false
 	case tClass:
@@ -541,7 +541,7 @@ func (p *parser) statement() (docItem, bool) {
 		p.expect(tSpace, "")
 		ids := p.idString()
 		p.expect(tSpace, "")
-		db.SetClass(ids, p.idString())
+		db.setClass(ids, p.idString())
 		p.separator()
 		return docItem{}, false
 	case tClick:
@@ -554,16 +554,16 @@ func (p *parser) statement() (docItem, bool) {
 	case tAccTitle:
 		p.i++
 		value := jsstr.Trim(p.expect(tAccTitleValue, ""))
-		db.SetAccTitle(value)
+		db.setAccTitle(value)
 		return docItem{ids: []string{value}}, true
 	case tAccDescr:
 		p.i++
 		value := jsstr.Trim(p.expect(tAccDescrValue, ""))
-		db.SetAccDescription(value)
+		db.setAccDescription(value)
 		return docItem{ids: []string{value}}, true
 	case tAccDescrMultilineValue:
 		value := jsstr.Trim(p.take())
-		db.SetAccDescription(value)
+		db.setAccDescription(value)
 		return docItem{ids: []string{value}}, true
 	}
 	if !idTokens[t] {
@@ -624,8 +624,8 @@ loop:
 	}
 }
 
-// ParseFlowchart parses source into db.
-func ParseFlowchart(source string, db *FlowDb) {
+// parseFlowchart parses source into db.
+func parseFlowchart(source string, db *FlowDb) {
 	src := common.Src(jsstr.UTF16(source))
 	if src.Index("}", 0) >= 0 {
 		src = trimBraceLines(src)
@@ -638,7 +638,7 @@ func ParseFlowchart(source string, db *FlowDb) {
 	p.expect(tGraph, "'SPACE', 'NEWLINE'")
 	if p.kind() == tNodir {
 		p.i++
-		db.SetDirection("TB")
+		db.setDirection("TB")
 	} else {
 		dir := p.expect(tDir, "'NODIR'")
 		t := p.kind()
@@ -652,7 +652,7 @@ func ParseFlowchart(source string, db *FlowDb) {
 			p.fail("'SEMI', 'NEWLINE', 'SPACE'")
 		}
 		p.i++
-		db.SetDirection(dir)
+		db.setDirection(dir)
 	}
 	p.document()
 	if p.kind() != tInputEnd {

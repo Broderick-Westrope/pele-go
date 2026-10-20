@@ -15,9 +15,9 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/yaml"
 )
 
-// FlowDbOptions configure a FlowDb. Upstream's warn callback and direction are never set by
+// flowDbOptions configure a FlowDb. Upstream's warn callback and direction are never set by
 // a diagram type, so they are left out.
-type FlowDbOptions struct {
+type flowDbOptions struct {
 	MaxEdges   float64
 	InheritDir bool
 }
@@ -130,11 +130,11 @@ type FlowDb struct {
 	edgeByID       map[string]*FlowEdge
 	pairCount      map[string]int
 	subCount       int
-	options        FlowDbOptions
+	options        flowDbOptions
 }
 
-// NewFlowDb returns an empty model.
-func NewFlowDb(options FlowDbOptions) *FlowDb {
+// newFlowDb returns an empty model.
+func newFlowDb(options flowDbOptions) *FlowDb {
 	return &FlowDb{
 		Classes:        map[string]*FlowClassDef{},
 		Tooltips:       map[string]string{},
@@ -193,8 +193,8 @@ func flowError(message string, code perr.Code) {
 	perr.Throw(e)
 }
 
-// AddVertex adds or updates a vertex. text and metadata are nil, and typ "", when not given.
-func (db *FlowDb) AddVertex(id string, text *FlowText, typ string, style []string, metadata *string) {
+// addVertex adds or updates a vertex. text and metadata are nil, and typ "", when not given.
+func (db *FlowDb) addVertex(id string, text *FlowText, typ string, style []string, metadata *string) {
 	if id == "" || jsstr.Trim(id) == "" {
 		return
 	}
@@ -355,8 +355,8 @@ func (db *FlowDb) addSingleLink(start, end string, info *LinkInfo, id string) {
 	}
 }
 
-// AddLink adds an edge from each of starts to each of ends.
-func (db *FlowDb) AddLink(starts, ends []string, info *LinkInfo) {
+// addLink adds an edge from each of starts to each of ends.
+func (db *FlowDb) addLink(starts, ends []string, info *LinkInfo) {
 	id := strings.Replace(info.ID, "@", "", 1)
 	lastStart := starts[len(starts)-1]
 	firstEnd := ends[0]
@@ -371,8 +371,8 @@ func (db *FlowDb) AddLink(starts, ends []string, info *LinkInfo) {
 	}
 }
 
-// UpdateLinkInterpolate sets the curve of the edges at positions, or the default one.
-func (db *FlowDb) UpdateLinkInterpolate(positions []string, interpolate string) {
+// updateLinkInterpolate sets the curve of the edges at positions, or the default one.
+func (db *FlowDb) updateLinkInterpolate(positions []string, interpolate string) {
 	for _, pos := range positions {
 		if pos == "default" {
 			db.DefaultInterpolate = interpolate
@@ -382,8 +382,8 @@ func (db *FlowDb) UpdateLinkInterpolate(positions []string, interpolate string) 
 	}
 }
 
-// UpdateLink sets the style of the edges at positions, or the default one.
-func (db *FlowDb) UpdateLink(positions []string, style []string) {
+// updateLink sets the style of the edges at positions, or the default one.
+func (db *FlowDb) updateLink(positions []string, style []string) {
 	// Upstream gives every edge the one array, and adds fill:none to it at the first edge.
 	var styled []*FlowEdge
 	for _, pos := range positions {
@@ -418,8 +418,8 @@ func (db *FlowDb) edgeAt(pos string) *FlowEdge {
 	return nil
 }
 
-// AddClass defines the classes ids, a comma-separated list.
-func (db *FlowDb) AddClass(ids string, styles []string) {
+// addClass defines the classes ids, a comma-separated list.
+func (db *FlowDb) addClass(ids string, styles []string) {
 	joined := strings.Join(styles, ",")
 	joined = strings.ReplaceAll(joined, `\,`, "§§§")
 	joined = strings.ReplaceAll(joined, ",", ";")
@@ -440,8 +440,8 @@ func (db *FlowDb) AddClass(ids string, styles []string) {
 	}
 }
 
-// SetDirection sets the direction the diagram runs in.
-func (db *FlowDb) SetDirection(dir string) {
+// setDirection sets the direction the diagram runs in.
+func (db *FlowDb) setDirection(dir string) {
 	d := jsstr.Trim(dir)
 	if strings.Contains(d, "<") {
 		d = "RL"
@@ -461,8 +461,8 @@ func (db *FlowDb) SetDirection(dir string) {
 	db.Direction = d
 }
 
-// SetClass gives the nodes, edges and subgraphs ids, a comma-separated list, a class.
-func (db *FlowDb) SetClass(ids, className string) {
+// setClass gives the nodes, edges and subgraphs ids, a comma-separated list, a class.
+func (db *FlowDb) setClass(ids, className string) {
 	for _, id := range strings.Split(ids, ",") {
 		if v, ok := db.Nodes.Get(id); ok {
 			v.Classes = append(v.Classes, className)
@@ -476,15 +476,15 @@ func (db *FlowDb) SetClass(ids, className string) {
 	}
 }
 
-// SetTooltip gives the nodes ids a tooltip.
-func (db *FlowDb) SetTooltip(ids, tooltip string) {
+// setTooltip gives the nodes ids a tooltip.
+func (db *FlowDb) setTooltip(ids, tooltip string) {
 	for _, id := range strings.Split(ids, ",") {
 		db.Tooltips[id] = tooltip
 	}
 }
 
-// SetLink links the nodes ids to link. target is "" when not given.
-func (db *FlowDb) SetLink(ids, link, target string) {
+// setLink links the nodes ids to link. target is "" when not given.
+func (db *FlowDb) setLink(ids, link, target string) {
 	url := jsstr.Trim(link)
 	for _, id := range strings.Split(ids, ",") {
 		if vertex, ok := db.Nodes.Get(id); ok {
@@ -495,22 +495,22 @@ func (db *FlowDb) SetLink(ids, link, target string) {
 			vertex.LinkTarget = target
 		}
 	}
-	db.SetClass(ids, "clickable")
+	db.setClass(ids, "clickable")
 }
 
-// SetClickEvent marks the nodes clickable. Callbacks are never executed, as in Mermaid's
+// setClickEvent marks the nodes clickable. Callbacks are never executed, as in Mermaid's
 // strict mode.
-func (db *FlowDb) SetClickEvent(ids string) {
-	db.SetClass(ids, "clickable")
+func (db *FlowDb) setClickEvent(ids string) {
+	db.setClass(ids, "clickable")
 }
 
-// SetAccTitle sets the accessible title.
-func (db *FlowDb) SetAccTitle(text string) {
+// setAccTitle sets the accessible title.
+func (db *FlowDb) setAccTitle(text string) {
 	db.AccTitle = jsstr.TrimStart(text)
 }
 
-// SetAccDescription sets the accessible description.
-func (db *FlowDb) SetAccDescription(text string) {
+// setAccDescription sets the accessible description.
+func (db *FlowDb) setAccDescription(text string) {
 	db.AccDescr = collapseIndentedBreaks(text)
 }
 

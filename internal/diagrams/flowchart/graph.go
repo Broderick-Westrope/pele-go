@@ -11,11 +11,12 @@ import (
 // GraphNode is a node as drawn. Empty strings and zero numbers stand for upstream's
 // undefined, as in FlowNode; ColorIndex is -1 when unset.
 type GraphNode struct {
-	ID                string
-	Label             string
-	LabelType         LabelType
-	Shape             string
-	IsGroup           bool
+	ID        string
+	Label     string
+	LabelType LabelType
+	Shape     string
+	IsGroup   bool
+	// ParentID is the group the node is in, when HasParent: a subgraph's id can be "".
 	ParentID          string
 	HasParent         bool
 	CSSStyles         []string
@@ -116,10 +117,10 @@ func firstTruthy(values ...any) any {
 	return values[len(values)-1]
 }
 
-// BuildFlowGraph resolves a parsed flowchart into the nodes and edges that are actually
+// buildFlowGraph resolves a parsed flowchart into the nodes and edges that are actually
 // drawn: group membership, collapsed subgraphs, class styles and edge defaults. defaultCurve
 // is "" when unset.
-func BuildFlowGraph(model *FlowDb, defaultCurve string) *FlowGraph {
+func buildFlowGraph(model *FlowDb, defaultCurve string) *FlowGraph {
 	graph := &FlowGraph{}
 	subgraphs := model.Subgraphs
 
