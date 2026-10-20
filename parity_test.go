@@ -231,9 +231,10 @@ var testZones = []string{"UTC", "Australia/Sydney"}
 
 // refereedTypes are the diagram types whose output goja does not compute as V8 does: gantt,
 // as goja's Date parses strings and resolves local times unlike V8, and usecase, whose errors
-// quote the message of JSON.parse, which goja words unlike V8, and railroad, whose repeat
-// counts print numbers past 2^64, which goja formats unlike V8.
-var refereedTypes = map[string]bool{"gantt": true, "usecase": true, "railroad": true}
+// quote the message of JSON.parse, which goja words unlike V8, and railroad and wardley,
+// whose repeat counts and annotation numbers print numbers past 2^64, which goja formats
+// unlike V8.
+var refereedTypes = map[string]bool{"gantt": true, "usecase": true, "railroad": true, "wardley": true}
 
 // zonesOf returns the zones a type's cases run in: "" alone, the process's own, for a type
 // the zone does not reach.
