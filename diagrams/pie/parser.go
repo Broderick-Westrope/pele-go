@@ -101,8 +101,6 @@ type ast struct {
 	sections                  []section
 }
 
-func ptr(s string) *string { return &s }
-
 func parsePie(src string) ast {
 	r := common.NewReader(pieLexer.Tokenize(jsstr.UTF16(src), "pie"), pieLexer.Types(), "pie")
 	var a ast
@@ -129,13 +127,13 @@ func parsePie(src string) ast {
 		case kindNewline:
 			r.I++
 		case kindAccDescr:
-			a.accDescr = ptr(common.AccDescrValue(r.Take()))
+			a.accDescr = new(common.AccDescrValue(r.Take()))
 			endOfLine()
 		case kindAccTitle:
-			a.accTitle = ptr(common.AccTitleValue(r.Take()))
+			a.accTitle = new(common.AccTitleValue(r.Take()))
 			endOfLine()
 		case kindTitle:
-			a.title = ptr(common.TitleValue(r.Take()))
+			a.title = new(common.TitleValue(r.Take()))
 			endOfLine()
 		case kindString:
 			label := common.StringValue(r.Take())

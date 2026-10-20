@@ -47,7 +47,7 @@ func TestResolveNodeID(t *testing.T) {
 // anchor keeps a component's inertia and strategy.
 func TestAddNodeMerges(t *testing.T) {
 	var b wardleyBuilder
-	b.addNode(nodeUpdate{id: "A", label: "A", className: "component", labelOffsetX: ptr(3.0), inertia: ptr(true), sourceStrategy: ptr("buy")})
+	b.addNode(nodeUpdate{id: "A", label: "A", className: "component", labelOffsetX: new(3.0), inertia: new(true), sourceStrategy: new("buy")})
 	b.startPipeline("A")
 	b.addNode(nodeUpdate{id: "A", label: "A", x: 1, y: 2, className: "anchor"})
 	n, _ := b.getNode("A")

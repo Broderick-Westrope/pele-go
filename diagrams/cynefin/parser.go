@@ -65,8 +65,6 @@ type cynefinAst struct {
 	transitions               []transitionAst
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func parseCynefin(src string) cynefinAst {
 	r := common.NewReader(cynefinLexer.Tokenize(common.Src(jsstr.UTF16(src)), "cynefin"), cynefinTokens, "cynefin")
 	var ast cynefinAst
@@ -96,20 +94,20 @@ func parseCynefin(src string) cynefinAst {
 		case tNewline:
 			r.I++
 		case tAccDescr:
-			ast.accDescr = ptr(common.AccDescrValue(r.Take()))
+			ast.accDescr = new(common.AccDescrValue(r.Take()))
 			endOfLine()
 		case tAccTitle:
-			ast.accTitle = ptr(common.AccTitleValue(r.Take()))
+			ast.accTitle = new(common.AccTitleValue(r.Take()))
 			endOfLine()
 		case tTitle:
-			ast.title = ptr(common.TitleValue(r.Take()))
+			ast.title = new(common.TitleValue(r.Take()))
 			endOfLine()
 		case tDomain:
 			name := r.Take()
 			if r.Accept(tArrow) {
 				transition := transitionAst{from: name, to: r.Expect(tDomain)}
 				if r.Accept(tColon) {
-					transition.label = ptr(common.StringValue(r.Expect(tString)))
+					transition.label = new(common.StringValue(r.Expect(tString)))
 				}
 				endOfLine()
 				ast.transitions = append(ast.transitions, transition)

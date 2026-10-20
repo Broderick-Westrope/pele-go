@@ -372,8 +372,6 @@ type wardleyAst struct {
 	deaccelerators            []placedAst
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func parseWardley(src string) wardleyAst {
 	r := common.NewReader(wardleyLexer.Tokenize(common.Src(jsstr.UTF16(src)), "wardley"), wardleyTokens, "wardley")
 	var ast wardleyAst
@@ -432,10 +430,10 @@ func parseWardley(src string) wardleyAst {
 	stage := func() stageAst {
 		out := stageAst{name: name()}
 		if r.Accept(tAt) {
-			out.boundary = ptr(number())
+			out.boundary = new(number())
 		}
 		if r.Accept(tSlash) {
-			out.secondName = ptr(name())
+			out.secondName = new(name())
 		}
 		return out
 	}
@@ -449,13 +447,13 @@ func parseWardley(src string) wardleyAst {
 		case tNewline:
 			r.I++
 		case tAccDescr:
-			ast.accDescr = ptr(common.AccDescrValue(r.Take()))
+			ast.accDescr = new(common.AccDescrValue(r.Take()))
 			endOfLine()
 		case tAccTitle:
-			ast.accTitle = ptr(common.AccTitleValue(r.Take()))
+			ast.accTitle = new(common.AccTitleValue(r.Take()))
 			endOfLine()
 		case tTitle:
-			ast.title = ptr(common.TitleValue(r.Take()))
+			ast.title = new(common.TitleValue(r.Take()))
 			endOfLine()
 		case tSize:
 			r.I++
@@ -571,14 +569,14 @@ func parseWardley(src string) wardleyAst {
 				link.fromPort = r.Take()
 			}
 			if at(tLinkArrow) || at(tArrow) {
-				link.arrow = ptr(r.Take())
+				link.arrow = new(r.Take())
 			}
 			link.to = name()
 			if at(tLinkPort) {
 				link.toPort = r.Take()
 			}
 			if at(tLinkLabel) {
-				link.linkLabel = ptr(jsstr.Trim(r.Take()[1:]))
+				link.linkLabel = new(jsstr.Trim(r.Take()[1:]))
 			}
 			endOfLine()
 			ast.links = append(ast.links, link)

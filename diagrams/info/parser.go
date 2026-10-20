@@ -32,8 +32,6 @@ type ast struct {
 	title, accTitle, accDescr *string
 }
 
-func ptr(s string) *string { return &s }
-
 func parseInfo(src string) ast {
 	tokens := infoLexer.Tokenize(jsstr.UTF16(src), "info")
 	r := common.NewReader(tokens, infoLexer.Types(), "info")
@@ -53,11 +51,11 @@ func parseInfo(src string) ast {
 	for r.Kind() != -1 {
 		switch r.Kind() {
 		case kindAccDescr:
-			a.accDescr = ptr(common.AccDescrValue(r.Take()))
+			a.accDescr = new(common.AccDescrValue(r.Take()))
 		case kindAccTitle:
-			a.accTitle = ptr(common.AccTitleValue(r.Take()))
+			a.accTitle = new(common.AccTitleValue(r.Take()))
 		case kindTitle:
-			a.title = ptr(common.TitleValue(r.Take()))
+			a.title = new(common.TitleValue(r.Take()))
 		default:
 			r.Fail("a title or the end of input")
 		}

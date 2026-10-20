@@ -72,8 +72,6 @@ type ast struct {
 	blocks                    []blockAst
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func parsePacket(src string) ast {
 	r := common.NewReader(packetLexer.Tokenize(jsstr.UTF16(src), "packet"), packetLexer.Types(), "packet")
 	var a ast
@@ -101,22 +99,22 @@ func parsePacket(src string) ast {
 		case kindNewline:
 			r.I++
 		case kindAccDescr:
-			a.accDescr = ptr(common.AccDescrValue(r.Take()))
+			a.accDescr = new(common.AccDescrValue(r.Take()))
 			endOfLine()
 		case kindAccTitle:
-			a.accTitle = ptr(common.AccTitleValue(r.Take()))
+			a.accTitle = new(common.AccTitleValue(r.Take()))
 			endOfLine()
 		case kindTitle:
-			a.title = ptr(common.TitleValue(r.Take()))
+			a.title = new(common.TitleValue(r.Take()))
 			endOfLine()
 		case kindInt, kindPlus:
 			var b blockAst
 			if r.Accept(kindPlus) {
-				b.bits = ptr(jsnum.Parse(r.Expect(kindInt)))
+				b.bits = new(jsnum.Parse(r.Expect(kindInt)))
 			} else {
-				b.start = ptr(jsnum.Parse(r.Take()))
+				b.start = new(jsnum.Parse(r.Take()))
 				if r.Accept(kindDash) {
-					b.end = ptr(jsnum.Parse(r.Expect(kindInt)))
+					b.end = new(jsnum.Parse(r.Expect(kindInt)))
 				}
 			}
 			r.Expect(kindColon)

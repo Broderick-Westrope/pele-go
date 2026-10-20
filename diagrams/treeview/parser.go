@@ -216,8 +216,6 @@ func convertValue(rule, input string) string {
 	return ""
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func parseTreeView(src string) treeViewAst {
 	r := common.NewReader(treeViewLexer.Tokenize(jsstr.UTF16(src), "treeView"), treeViewLexer.Types(), "treeView")
 	var ast treeViewAst
@@ -225,13 +223,13 @@ func parseTreeView(src string) treeViewAst {
 	for {
 		switch r.Kind() {
 		case kindAccDescr:
-			ast.accDescr = ptr(common.AccDescrValue(r.Take()))
+			ast.accDescr = new(common.AccDescrValue(r.Take()))
 			continue
 		case kindAccTitle:
-			ast.accTitle = ptr(common.AccTitleValue(r.Take()))
+			ast.accTitle = new(common.AccTitleValue(r.Take()))
 			continue
 		case kindTitle:
-			ast.title = ptr(common.TitleValue(r.Take()))
+			ast.title = new(common.TitleValue(r.Take()))
 			continue
 		}
 		break
@@ -239,7 +237,7 @@ func parseTreeView(src string) treeViewAst {
 	for r.Kind() != -1 {
 		var node treeNodeAst
 		if r.Kind() == kindIndentation {
-			node.indent = ptr(len(r.Take()))
+			node.indent = new(len(r.Take()))
 		}
 		switch r.Kind() {
 		case kindQuotedName:
@@ -253,11 +251,11 @@ func parseTreeView(src string) treeViewAst {
 		for {
 			switch r.Kind() {
 			case kindClassAnnotation:
-				node.classAnnotation = ptr(convertValue("CLASS_ANNOTATION", r.Take()))
+				node.classAnnotation = new(convertValue("CLASS_ANNOTATION", r.Take()))
 			case kindIconAnnotation:
-				node.iconAnnotation = ptr(convertValue("ICON_ANNOTATION", r.Take()))
+				node.iconAnnotation = new(convertValue("ICON_ANNOTATION", r.Take()))
 			case kindDescAnnotation:
-				node.descAnnotation = ptr(convertValue("DESC_ANNOTATION", r.Take()))
+				node.descAnnotation = new(convertValue("DESC_ANNOTATION", r.Take()))
 			default:
 				break annotations
 			}

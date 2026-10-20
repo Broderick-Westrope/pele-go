@@ -189,8 +189,6 @@ type gitGraphAst struct {
 	statements                []statementAst
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func parseGit(src string) gitGraphAst {
 	r := common.NewReader(gitLexer.Tokenize(jsstr.UTF16(src), "gitGraph"), gitLexer.Types(), "gitGraph")
 	var a gitGraphAst
@@ -246,26 +244,26 @@ func parseGit(src string) gitGraphAst {
 		case tNewline:
 			r.I++
 		case tAccDescr:
-			a.accDescr = ptr(common.AccDescrValue(r.Take()))
+			a.accDescr = new(common.AccDescrValue(r.Take()))
 			endOfLine()
 		case tAccTitle:
-			a.accTitle = ptr(common.AccTitleValue(r.Take()))
+			a.accTitle = new(common.AccTitleValue(r.Take()))
 			endOfLine()
 		case tTitle:
-			a.title = ptr(common.TitleValue(r.Take()))
+			a.title = new(common.TitleValue(r.Take()))
 			endOfLine()
 		case tCommit:
 			r.I++
 			node := statementAst{kind: stCommit, tags: []string{}}
 			for {
 				if r.Accept(tID) {
-					node.id = ptr(str())
+					node.id = new(str())
 				} else if r.Accept(tTag) {
 					node.tags = append(node.tags, str())
 				} else if r.Accept(tType) {
-					node.typ = ptr(commitType())
+					node.typ = new(commitType())
 				} else if r.Accept(tMsg) || r.Kind() == tString {
-					node.message = ptr(str())
+					node.message = new(str())
 				} else {
 					break
 				}
@@ -276,7 +274,7 @@ func parseGit(src string) gitGraphAst {
 			r.I++
 			node := statementAst{kind: stBranch, name: name()}
 			if r.Accept(tOrder) {
-				node.order = ptr(jsnum.ParseInt(r.Expect(tInt)))
+				node.order = new(jsnum.ParseInt(r.Expect(tInt)))
 			}
 			endOfLine()
 			a.statements = append(a.statements, node)
@@ -285,11 +283,11 @@ func parseGit(src string) gitGraphAst {
 			node := statementAst{kind: stMerge, name: name(), tags: []string{}}
 			for {
 				if r.Accept(tID) {
-					node.id = ptr(str())
+					node.id = new(str())
 				} else if r.Accept(tTag) {
 					node.tags = append(node.tags, str())
 				} else if r.Accept(tType) {
-					node.typ = ptr(commitType())
+					node.typ = new(commitType())
 				} else {
 					break
 				}
@@ -306,11 +304,11 @@ func parseGit(src string) gitGraphAst {
 			node := statementAst{kind: stCherryPicking, tags: []string{}}
 			for {
 				if r.Accept(tID) {
-					node.id = ptr(str())
+					node.id = new(str())
 				} else if r.Accept(tTag) {
 					node.tags = append(node.tags, str())
 				} else if r.Accept(tParent) {
-					node.parent = ptr(str())
+					node.parent = new(str())
 				} else {
 					break
 				}

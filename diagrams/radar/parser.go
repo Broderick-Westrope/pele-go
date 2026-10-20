@@ -312,8 +312,6 @@ func parseRadar(source string) radarAst {
 		return k == tShowLegend || k == tTicks || k == tMax || k == tMin || k == tGraticule
 	}
 
-	ptr := func(s string) *string { return &s }
-
 	newlines()
 	if !r.Accept(tRadarColon) {
 		r.Expect(tRadar)
@@ -325,13 +323,13 @@ func parseRadar(source string) radarAst {
 		case tNewline:
 			r.I++
 		case tAccDescr:
-			ast.accDescr = ptr(common.AccDescrValue(r.Take()))
+			ast.accDescr = new(common.AccDescrValue(r.Take()))
 			endOfLine()
 		case tAccTitle:
-			ast.accTitle = ptr(common.AccTitleValue(r.Take()))
+			ast.accTitle = new(common.AccTitleValue(r.Take()))
 			endOfLine()
 		case tTitle:
-			ast.title = ptr(common.TitleValue(r.Take()))
+			ast.title = new(common.TitleValue(r.Take()))
 			endOfLine()
 		case tAxis:
 			r.I++

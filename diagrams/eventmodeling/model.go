@@ -190,11 +190,11 @@ func buildEventModel(a eventModelAst, title *string) *eventModelingModel {
 		}
 		var text *string
 		if frame.dataInlineValue != nil {
-			text = ptr(blockText(*frame.dataInlineValue))
+			text = new(blockText(*frame.dataInlineValue))
 		}
 		if frame.dataReference != nil {
 			if block, ok := data[*frame.dataReference]; ok {
-				text = ptr(blockText(block))
+				text = new(blockText(block))
 			}
 		}
 		box := &emBox{

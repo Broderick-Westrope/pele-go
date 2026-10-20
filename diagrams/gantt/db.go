@@ -155,7 +155,7 @@ tagged:
 		t.id = "task" + jsnum.Format(float64(db.taskCount))
 	}
 	if len(data) > 1 {
-		t.raw.start = ptr(data[len(data)-2])
+		t.raw.start = new(data[len(data)-2])
 	}
 	t.raw.end = data[len(data)-1]
 
@@ -164,7 +164,7 @@ tagged:
 		db.lastOrder++
 	}
 	db.tasks = append(db.tasks, t)
-	db.lastTaskID = ptr(t.id)
+	db.lastTaskID = new(t.id)
 	db.byID[t.id] = len(db.tasks) - 1
 }
 

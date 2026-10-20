@@ -291,8 +291,6 @@ type eventModelAst struct {
 	source                    common.Src
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func parseEventModel(source string) eventModelAst {
 	src := jsstr.UTF16(source)
 	r := common.NewReader(emLexer.Tokenize(src, "eventmodeling"), emLexer.Types(), "eventmodeling")
@@ -335,11 +333,11 @@ func parseEventModel(source string) eventModelAst {
 		kind := r.Kind()
 		switch {
 		case kind == tAccDescr:
-			a.accDescr = ptr(r.Take())
+			a.accDescr = new(r.Take())
 		case kind == tAccTitle:
-			a.accTitle = ptr(r.Take())
+			a.accTitle = new(r.Take())
 		case kind == tTitle:
-			a.title = ptr(r.Take())
+			a.title = new(r.Take())
 		case kind == tEntity:
 			r.I++
 			a.modelEntities = append(a.modelEntities, qualifiedName())
@@ -353,12 +351,12 @@ func parseEventModel(source string) eventModelAst {
 				frame.sourceFrames = append(frame.sourceFrames, r.Expect(tFrameID))
 			}
 			if r.Accept(tOpen) {
-				frame.dataReference = ptr(r.Expect(tID))
+				frame.dataReference = new(r.Expect(tID))
 				r.Expect(tClose)
 			}
 			if at(tTick) || at(tInline) {
 				frame.dataType = readDataType()
-				frame.dataInlineValue = ptr(r.Expect(tInline))
+				frame.dataInlineValue = new(r.Expect(tInline))
 			}
 			a.frames = append(a.frames, frame)
 		case kind == tData:

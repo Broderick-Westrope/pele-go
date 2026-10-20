@@ -82,7 +82,7 @@ func parseGantt(source string, db *ganttDb) {
 			db.axisFormat = after(k, 11)
 		case tTickInterval:
 			end("")
-			db.tickInterval = ptr(after(k, 13))
+			db.tickInterval = new(after(k, 13))
 		case tExcludes:
 			end("")
 			db.excludes = mergeTokens(db.excludes, after(k, 9))
@@ -136,14 +136,14 @@ func parseGantt(source string, db *ganttDb) {
 			hasArgs := false
 			switch toks.types[i] {
 			case tCallbackname:
-				name = ptr(text(i))
+				name = new(text(i))
 				i++
 				if toks.types[i] == tCallbackargs {
 					hasArgs = true
 					i++
 				}
 				if toks.types[i] == tHref {
-					href = ptr(text(i))
+					href = new(text(i))
 					i++
 					end("")
 				} else if hasArgs {
@@ -152,10 +152,10 @@ func parseGantt(source string, db *ganttDb) {
 					end(", 'callbackargs', 'href'")
 				}
 			case tHref:
-				href = ptr(text(i))
+				href = new(text(i))
 				i++
 				if toks.types[i] == tCallbackname {
-					name = ptr(text(i))
+					name = new(text(i))
 					i++
 					if toks.types[i] == tCallbackargs {
 						i++
@@ -179,9 +179,7 @@ func parseGantt(source string, db *ganttDb) {
 			}
 		default:
 			end("")
-			db.weekday = ptr(days[t-tWeekdayMonday])
+			db.weekday = new(days[t-tWeekdayMonday])
 		}
 	}
 }
-
-func ptr[T any](v T) *T { return &v }

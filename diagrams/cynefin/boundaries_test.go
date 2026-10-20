@@ -62,7 +62,7 @@ func TestResolveSeed(t *testing.T) {
 // is none.
 func TestSetTransitions(t *testing.T) {
 	db := &cynefinDb{domains: map[string][]string{}}
-	db.setTransitions([]transitionAst{{from: "complex", to: "complex"}, {from: "clear", to: "chaotic", label: ptr("")}, {from: "complex", to: "clear", label: ptr("x")}})
+	db.setTransitions([]transitionAst{{from: "complex", to: "complex"}, {from: "clear", to: "chaotic", label: new("")}, {from: "complex", to: "clear", label: new("x")}})
 	want := []cynefinTransition{{"clear", "chaotic", ""}, {"complex", "clear", "x"}}
 	if len(db.transitions) != len(want) || db.transitions[0] != want[0] || db.transitions[1] != want[1] {
 		t.Errorf("transitions = %+v, want %+v", db.transitions, want)

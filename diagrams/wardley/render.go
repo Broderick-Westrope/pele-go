@@ -440,10 +440,10 @@ func draw(m wardleyModel, config *jsobj.Object, rc *core.Context, plotW, natural
 		}
 		var ox, oy *float64
 		if node.labelOffsetX != nil {
-			ox = ptr(clamp(*node.labelOffsetX, -5000, 5000))
+			ox = new(clamp(*node.labelOffsetX, -5000, 5000))
 		}
 		if node.labelOffsetY != nil {
-			oy = ptr(clamp(*node.labelOffsetY, -5000, 5000))
+			oy = new(clamp(*node.labelOffsetY, -5000, 5000))
 		}
 		or := func(v *float64, fallback float64) float64 {
 			if v != nil {

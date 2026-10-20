@@ -182,8 +182,6 @@ type treemapAst struct {
 	rows                      []rowAst
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func parseTreemap(source string) treemapAst {
 	src := common.Src(jsstr.UTF16(source))
 	r := common.NewReader(treemapLexer.Tokenize(src, "treemap"), treemapLexer.Types(), "treemap")
@@ -195,13 +193,13 @@ func parseTreemap(source string) treemapAst {
 		kind := r.Kind()
 		switch kind {
 		case kindAccDescr:
-			ast.accDescr = ptr(common.AccDescrValue(r.Take()))
+			ast.accDescr = new(common.AccDescrValue(r.Take()))
 			continue
 		case kindAccTitle:
-			ast.accTitle = ptr(common.AccTitleValue(r.Take()))
+			ast.accTitle = new(common.AccTitleValue(r.Take()))
 			continue
 		case kindTitle:
-			ast.title = ptr(common.TitleValue(r.Take()))
+			ast.title = new(common.TitleValue(r.Take()))
 			continue
 		}
 		if kind != kindIndentation && kind != kindString && kind != kindClassDef {
@@ -210,7 +208,7 @@ func parseTreemap(source string) treemapAst {
 
 		var indent *int
 		if kind == kindIndentation {
-			indent = ptr(len(r.Take()))
+			indent = new(len(r.Take()))
 		}
 		if r.Kind() == kindClassDef {
 			_, name, style := matchClassDef(common.Src(jsstr.UTF16(r.Take())), 0)
@@ -238,7 +236,7 @@ func parseTreemap(source string) treemapAst {
 			item = itemAst{name: name}
 		}
 		if r.Accept(kindStyleSeparator) {
-			item.classSelector = ptr(r.Expect(kindID))
+			item.classSelector = new(r.Expect(kindID))
 		}
 		ast.rows = append(ast.rows, rowAst{indent: indent, item: item})
 	}

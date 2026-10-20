@@ -112,7 +112,7 @@ func (db *gitDb) parseStatement(statement statementAst) {
 		}
 		var typ *int
 		if statement.typ != nil {
-			typ = ptr(typeCode(*statement.typ))
+			typ = new(typeCode(*statement.typ))
 		}
 		db.merge(statement.name, id, typ, statement.tags)
 	case stCheckout:

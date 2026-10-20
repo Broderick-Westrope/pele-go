@@ -58,7 +58,7 @@ func buildPacket(a ast, config *jsobj.Object, title *string) model {
 			invalid("Packet block " + jsnum.Format(*start) + " - " + jsnum.Format(*end) + " is invalid. End must be greater than start.")
 		}
 		if start == nil {
-			start = ptr(lastBit + 1)
+			start = new(lastBit + 1)
 		}
 		if *start != lastBit+1 {
 			e := start
@@ -75,10 +75,10 @@ func buildPacket(a ast, config *jsobj.Object, title *string) model {
 			if bits != nil {
 				n = *bits
 			}
-			end = ptr(*start + n - 1)
+			end = new(*start + n - 1)
 		}
 		if bits == nil {
-			bits = ptr(*end - *start + 1)
+			bits = new(*end - *start + 1)
 		}
 		s, e, n := *start, *end, *bits
 		lastBit = e

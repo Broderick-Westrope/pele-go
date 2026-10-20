@@ -58,7 +58,7 @@ func flowFromArrow(arrow *string) (flow int, label *string) {
 	a := *arrow
 	if len(a) > 1 && a[1] == '\'' {
 		if end := strings.Index(a[2:], "'"); end != -1 {
-			label = ptr(a[2 : 2+end])
+			label = new(a[2 : 2+end])
 		}
 	}
 	switch {
@@ -82,7 +82,7 @@ func offsets(label *labelAst) (*float64, *float64) {
 		}
 		return 1
 	}
-	return ptr(sign(label.negX) * label.offsetX), ptr(sign(label.negY) * label.offsetY)
+	return new(sign(label.negX) * label.offsetX), new(sign(label.negY) * label.offsetY)
 }
 
 // populate is Mermaid's populateDb: it fills the builder from the syntax tree, in Mermaid's
@@ -123,8 +123,8 @@ func populate(ast wardleyAst, db *wardleyBuilder) {
 			className:      "component",
 			labelOffsetX:   labelOffsetX,
 			labelOffsetY:   labelOffsetY,
-			inertia:        ptr(component.inertia),
-			sourceStrategy: ptr(component.strategy),
+			inertia:        new(component.inertia),
+			sourceStrategy: new(component.strategy),
 		})
 	}
 
@@ -152,8 +152,8 @@ func populate(ast wardleyAst, db *wardleyBuilder) {
 				className:      "pipeline-component",
 				labelOffsetX:   labelOffsetX,
 				labelOffsetY:   labelOffsetY,
-				inertia:        ptr(false),
-				sourceStrategy: ptr(""),
+				inertia:        new(false),
+				sourceStrategy: new(""),
 			})
 			db.addPipelineComponent(pipeline.parent, id)
 		}
