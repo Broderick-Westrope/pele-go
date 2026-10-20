@@ -96,6 +96,12 @@ type Context struct {
 	Icons      *text.Icons
 }
 
+// CheckCanceled stops the render with a Canceled error once its context is done. Upstream has
+// no equivalent; renderers call it at the heads of loops that can run long, as layout does.
+func (c *Context) CheckCanceled() {
+	checkContext(c.Ctx)
+}
+
 // Measurer returns the measurer to lay labels out with.
 func (c *Context) Measurer() text.Measurer {
 	if c.Options.Measurer != nil {

@@ -95,6 +95,7 @@ func renderVenn(model *vennDb, _ *jsobj.Object, rc *core.Context) core.Rendered 
 	// Circles that touch each circle; only those can cut into a region of it.
 	neighbors := make([][]int, len(circles))
 	for a := range circles {
+		rc.CheckCanceled()
 		for b := a + 1; b < len(circles); b++ {
 			if jsmath.Hypot(circles[a].x-circles[b].x, circles[a].y-circles[b].y) < circles[a].r+circles[b].r {
 				neighbors[a] = append(neighbors[a], b)

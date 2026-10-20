@@ -81,3 +81,31 @@ func TestLosslessOutputPairsEscapedSurrogates(t *testing.T) {
 		t.Fatalf("SVG does not contain the emoji: %q", res.SVG)
 	}
 }
+
+// cancelAfter is a context that is canceled from its nth call to Err on, so a test can
+// cancel a render once it is past the checks the core makes before calling the renderer.
+type cancelAfter struct {
+	context.Context
+	calls, n int
+}
+
+func (c *cancelAfter) Err() error {
+	c.calls++
+	if c.calls >= c.n {
+		return context.Canceled
+	}
+	return nil
+}
+
+func TestVennRenderStopsOnCanceledContext(t *testing.T) {
+	src := "venn-beta\nset A\nset B\nset C\n"
+	ctx := &cancelAfter{Context: context.Background(), n: 4}
+	_, err := pele.Render(ctx, src, pele.Options{})
+	var pe *pele.Error
+	if !errors.As(err, &pe) || pe.Code != pele.CodeCanceled {
+		t.Fatalf("Render error = %v, want a %s *pele.Error", err, pele.CodeCanceled)
+	}
+	if ctx.calls != 4 {
+		t.Fatalf("context checked %d times, want the renderer's first check to stop it", ctx.calls)
+	}
+}
