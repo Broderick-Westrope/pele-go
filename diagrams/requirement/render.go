@@ -393,8 +393,8 @@ func draw(db *requirementDb, _ *jsobj.Object, rc *core.Context, turned bool) cor
 	var nodesOut strings.Builder
 	for i, view := range views {
 		w, h, style := view.w, view.h, view.style
-		left := -w / 2
-		top := -h / 2
+		left := float64(-w / 2)
+		top := float64(-h / 2)
 		body := `<rect x="` + svg.Num(left) + `" y="` + svg.Num(top) + `" width="` + svg.Num(w) + `" height="` + svg.Num(h) +
 			`" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"` + style.Shape + `/>` +
 			svg.LabelSVG(view.kind, 0, top+padY+float64(view.kind.Height/2),
