@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
-	"github.com/Broderick-Westrope/pele-go/internal/diagrams/flowchart"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
@@ -504,7 +503,7 @@ func (db *agentflowDb) addVertex(id string, text *flowText, typ string, style []
 		if !hasAuthored {
 			db.located("No such shape: "+stringify(shapeValue)+".", perr.Semantic, metadataLoc)
 		}
-		if flowchart.ChangesWhenLowered(authored) || strings.Contains(authored, "_") {
+		if jsstr.ChangesWhenLowered(authored) || strings.Contains(authored, "_") {
 			db.located("No such shape: "+authored+". Shape names should be lowercase.", perr.Semantic, metadataLoc)
 		}
 		shape := shapeValue.(string)

@@ -2,7 +2,6 @@ package kanban
 
 import (
 	"strings"
-	"unicode"
 
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
@@ -63,7 +62,7 @@ func (db *kanbanDb) AddNode(level int, id, descr string, _ int, shapeData *strin
 				return jsobj.ToString(v)
 			}
 			shape := field("shape")
-			if changesWhenLowered(shape) || strings.Contains(shape, "_") {
+			if jsstr.ChangesWhenLowered(shape) || strings.Contains(shape, "_") {
 				kanbanError("No such shape: "+shape+". Shape names should be lowercase.", perr.Semantic)
 			}
 			if v, _ := doc.Get("label"); jsobj.Truthy(v) {
@@ -109,27 +108,4 @@ func (db *kanbanDb) DecorateNode(d common.Decoration) {
 	if d.Class != nil && *d.Class != "" {
 		node.cssClasses = *d.Class
 	}
-}
-
-// changesWhenLowered reports whether s.toLowerCase() !== s. U+0130 lowers to two characters
-// in JS; any other change is a different rune. Go's tables are Unicode 15, V8's 16, which
-// adds the upper case letters newUpper lists.
-func changesWhenLowered(s string) bool {
-	for i := 0; i < len(s); {
-		r, n := jsstr.Decode(s, i)
-		if r == 0x130 || unicode.ToLower(r) != r || newUpper(r) {
-			return true
-		}
-		i += n
-	}
-	return false
-}
-
-// newUpper reports whether r is an upper case letter Unicode 16 added.
-func newUpper(r rune) bool {
-	switch r {
-	case 0x1c89, 0xa7cb, 0xa7cc, 0xa7da, 0xa7dc:
-		return true
-	}
-	return r >= 0x10d50 && r <= 0x10d65
 }

@@ -4,8 +4,6 @@ import (
 	"math"
 	"strings"
 	"time"
-	"unicode"
-	"unicode/utf16"
 
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsdate"
@@ -56,7 +54,7 @@ func mergeTokens(existing []string, txt string) []string {
 	for _, token := range existing {
 		seen[token] = true
 	}
-	lower := toLowerCase(txt)
+	lower := jsstr.ToLowerCase(txt)
 	start := 0
 	for i := 0; i <= len(lower); {
 		r, n := rune(','), 1
@@ -73,76 +71,6 @@ func mergeTokens(existing []string, txt string) []string {
 		i += n
 	}
 	return merged
-}
-
-// toLowerCase is String.prototype.toLowerCase: Unicode's default lower-casing, with İ's
-// two-character lower case and Σ's final form, which Go's simple mappings leave out.
-func toLowerCase(s string) string {
-	units := jsstr.UTF16(s)
-	var runes []rune
-	for i := 0; i < len(units); {
-		r := rune(units[i])
-		n := 1
-		if utf16.IsSurrogate(r) && i+1 < len(units) {
-			if pair := utf16.DecodeRune(r, rune(units[i+1])); pair != unicode.ReplacementChar {
-				r, n = pair, 2
-			}
-		}
-		runes = append(runes, r)
-		i += n
-	}
-	var out []uint16
-	for i, r := range runes {
-		switch {
-		case r == 0x130:
-			out = append(out, 'i', 0x307)
-		case r == 0x3a3:
-			if finalSigma(runes, i) {
-				out = append(out, 0x3c2)
-			} else {
-				out = append(out, 0x3c3)
-			}
-		case utf16.IsSurrogate(r):
-			out = append(out, uint16(r))
-		default:
-			out = utf16.AppendRune(out, unicode.ToLower(r))
-		}
-	}
-	return jsstr.FromUTF16(out)
-}
-
-// finalSigma is Unicode's Final_Sigma condition: a cased letter before, skipping
-// case-ignorable characters, and none after.
-func finalSigma(runes []rune, at int) bool {
-	before := false
-	for i := at - 1; i >= 0; i-- {
-		if !caseIgnorable(runes[i]) {
-			before = cased(runes[i])
-			break
-		}
-	}
-	if !before {
-		return false
-	}
-	for i := at + 1; i < len(runes); i++ {
-		if !caseIgnorable(runes[i]) {
-			return !cased(runes[i])
-		}
-	}
-	return true
-}
-
-func cased(r rune) bool {
-	return unicode.IsUpper(r) || unicode.IsLower(r) || unicode.IsTitle(r) ||
-		unicode.Is(unicode.Other_Lowercase, r) || unicode.Is(unicode.Other_Uppercase, r)
-}
-
-func caseIgnorable(r rune) bool {
-	switch r {
-	case '\'', '.', ':', '^', '`', 0xa8, 0xad, 0xaf, 0xb4, 0xb7, 0xb8, 0x2018, 0x2019, 0x2024, 0x2027:
-		return true
-	}
-	return unicode.In(r, unicode.Mn, unicode.Me, unicode.Cf, unicode.Lm, unicode.Sk)
 }
 
 // ganttDb is upstream's GanttDb as the parser leaves it. Scheduling, which upstream does in
