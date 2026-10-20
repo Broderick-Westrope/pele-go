@@ -112,3 +112,24 @@ func TestWellFormedReplacesLoneSurrogates(t *testing.T) {
 		t.Fatalf("WellFormed = %q, want %q", got, want)
 	}
 }
+
+func TestSliceCountsCodeUnits(t *testing.T) {
+	s := jsstr.FromUTF16([]uint16{0x3000, 'a', 0xd83d, 0xde00, 'b'})
+	tests := map[string]struct {
+		from, to int
+		want     []uint16
+	}{
+		"from start":         {from: 0, to: 2, want: []uint16{0x3000, 'a'}},
+		"whole pair":         {from: 2, to: 4, want: []uint16{0xd83d, 0xde00}},
+		"splits a pair":      {from: 3, to: 5, want: []uint16{0xde00, 'b'}},
+		"past the end":       {from: 4, to: 99, want: []uint16{'b'}},
+		"empty when crossed": {from: 3, to: 1, want: []uint16{}},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := jsstr.UTF16(jsstr.Slice(s, tc.from, tc.to)); !slices.Equal(got, tc.want) {
+				t.Fatalf("Slice(%d, %d) = %x, want %x", tc.from, tc.to, got, tc.want)
+			}
+		})
+	}
+}

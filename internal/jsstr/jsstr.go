@@ -180,3 +180,15 @@ func TrimEnd(s string) string {
 func Trim(s string) string {
 	return TrimEnd(TrimStart(s))
 }
+
+// Slice returns s.slice(from, to) for non-negative UTF-16 offsets. An offset inside a
+// surrogate pair splits it, leaving lone surrogates, as JS does.
+func Slice(s string, from, to int) string {
+	if to <= from {
+		return ""
+	}
+	units := UTF16(s)
+	from = min(from, len(units))
+	to = min(to, len(units))
+	return FromUTF16(units[from:to])
+}
