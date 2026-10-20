@@ -142,10 +142,6 @@ func renderEr(db *erDb, config *jsobj.Object, rc *core.Context) core.Rendered {
 	return common.TurnToFit(rc.Options, func(down bool) core.Rendered { return draw(db, config, rc, down) })
 }
 
-func box(c *layout.CNode) svg.Box {
-	return svg.Box{X: c.X, Y: c.Y, W: c.W, H: c.H, IsGroup: c.IsGroup}
-}
-
 // stripDefault is s.replace(/^default\s?/, ”).
 func stripDefault(s string) string {
 	if !strings.HasPrefix(s, "default") {
@@ -450,7 +446,7 @@ func draw(db *erDb, config *jsobj.Object, rc *core.Context, turned bool) core.Re
 			view.h = c.H
 			x := c.X - float64(c.W/2)
 			y := c.Y - float64(c.H/2)
-			titleX := svg.ClusterTitleX(box(c), view.label.Width, crossings, groupPad)
+			titleX := svg.ClusterTitleX(c, view.label.Width, crossings, groupPad)
 			clusters.WriteString(`<g class="pele-cluster` + classes + `" data-id="` + svg.EscText(node.id) + `">` +
 				`<rect x="` + svg.Num(x) + `" y="` + svg.Num(y) + `" width="` + svg.Num(c.W) + `" height="` + svg.Num(c.H) + `" rx="` + svg.Radius +
 				`" fill="var(--_a)" fill-opacity="0.5" stroke="var(--_b)"` + view.style.Shape + `/>` +

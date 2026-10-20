@@ -61,10 +61,6 @@ type nodeView struct {
 	loops int
 }
 
-func box(c *layout.CNode) svg.Box {
-	return svg.Box{X: c.X, Y: c.Y, W: c.W, H: c.H, IsGroup: c.IsGroup}
-}
-
 // RenderFlowchart draws a flowchart, or with a variant a diagram type built on one.
 func RenderFlowchart(db *FlowDb, config *jsobj.Object, rc *core.Context, variant *FlowVariant) core.Rendered {
 	fitted := func(down bool) core.Rendered {
@@ -363,10 +359,10 @@ func draw(db *FlowDb, config *jsobj.Object, rc *core.Context, variant *FlowVaria
 			continue
 		}
 		if c.IsGroup {
-			titleX := svg.ClusterTitleX(box(c), view.label.Width, crossings, groupPadding)
+			titleX := svg.ClusterTitleX(c, view.label.Width, crossings, groupPadding)
 			titleY := y - float64(c.H/2) + 8 + float64(view.label.Height/2)
 			titleAttrs := ` class="pele-cluster-label" fill="var(--_m)"` + view.style.Text
-			struck := svg.TitleCrossed(box(c), view.label.Width, titleX, crossings)
+			struck := svg.TitleCrossed(c, view.label.Width, titleX, crossings)
 			if struck {
 				struckTitles.WriteString(svg.StruckTitle(view.label, titleX, titleY, titleAttrs, id, parentOf, i, icons))
 			}
@@ -467,8 +463,8 @@ func draw(db *FlowDb, config *jsobj.Object, rc *core.Context, variant *FlowVaria
 		if ce.Src == ce.Dst || drawn[i].Thickness == "invisible" || len(ce.Route) < 6 {
 			continue
 		}
-		reach.Add(ce.Src, svg.EndSide(ce.Route, 0, box(&cnodes[ce.Src])), drawn[i].ArrowTypeStart)
-		reach.Add(ce.Dst, svg.EndSide(ce.Route, len(ce.Route)-3, box(&cnodes[ce.Dst])), drawn[i].ArrowTypeEnd)
+		reach.Add(ce.Src, svg.EndSide(ce.Route, 0, &cnodes[ce.Src]), drawn[i].ArrowTypeStart)
+		reach.Add(ce.Dst, svg.EndSide(ce.Route, len(ce.Route)-3, &cnodes[ce.Dst]), drawn[i].ArrowTypeEnd)
 	}
 
 	var edgesOut, labelsOut strings.Builder
@@ -494,7 +490,7 @@ func draw(db *FlowDb, config *jsobj.Object, rc *core.Context, variant *FlowVaria
 					svg.MarkerTrim(endType), ce.LabelW, ce.LabelH)
 			} else {
 				route := append([]float64{}, ce.Route...)
-				srcBox, dstBox := box(&cnodes[ce.Src]), box(&cnodes[ce.Dst])
+				srcBox, dstBox := &cnodes[ce.Src], &cnodes[ce.Dst]
 				leaves := reach.Of(ce.Src, svg.EndSide(route, 0, srcBox))
 				arrives := reach.Of(ce.Dst, svg.EndSide(route, len(route)-3, dstBox))
 				src, dst := views[ce.Src], views[ce.Dst]

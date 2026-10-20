@@ -77,10 +77,6 @@ overflow, `setDate`, DST) in a helper package `internal/jsdate` with tests again
 levels per recursive function unless upstream bounds it) and call `perr.ThrowRange()` past
 it.
 
-**Layout types in `svg`:** `svg/cluster.ts` and `svg/shapes.ts` take layout's `CNode`; until
-`internal/layout` exists they take `svg.Box` (its x, y, w, h and isGroup), and `svg/edges.ts`'s
-`ease` is copied from `layout/layered.ts`. Switch them to the layout types when it lands.
-
 **Concurrency:** no mutable package-level state except tables built with `sync.OnceValue`.
 Per-render state goes on the model or `core.Context`.
 

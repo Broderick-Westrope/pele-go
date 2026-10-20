@@ -6,6 +6,7 @@ import (
 
 	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
+	"github.com/Broderick-Westrope/pele-go/internal/layout"
 )
 
 // ShapeSize is a node shape's size for a label of a given size.
@@ -833,7 +834,7 @@ func ShapeHasLabel(shape string) bool {
 
 // EndSide is the side of a node's layout box that a route end lies on: 0 top, 1 right, 2
 // bottom, 3 left, or -1 for none.
-func EndSide(route []float64, at int, c Box) int {
+func EndSide(route []float64, at int, c *layout.CNode) int {
 	dx := route[at] - c.X
 	dy := route[at+1] - c.Y
 	if math.Abs(math.Abs(dy)-float64(c.H/2)) < 0.5 {
@@ -853,7 +854,7 @@ func EndSide(route []float64, at int, c Box) int {
 
 // InsetRoute moves a route end from a node's layout box onto the outline of the shape drawn
 // in it, shape by w by h.
-func InsetRoute(route []float64, at int, shape string, w, h float64, c Box) {
+func InsetRoute(route []float64, at int, shape string, w, h float64, c *layout.CNode) {
 	if c.IsGroup {
 		return
 	}

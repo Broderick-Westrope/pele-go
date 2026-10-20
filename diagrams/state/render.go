@@ -146,10 +146,6 @@ func group(dir layout.Dir, padX, padTop, padBottom float64) layout.CNode {
 	return c
 }
 
-func box(c *layout.CNode) svg.Box {
-	return svg.Box{X: c.X, Y: c.Y, W: c.W, H: c.H, IsGroup: c.IsGroup}
-}
-
 // stripMermaidClasses is s.replace(/(?:^| )statediagram-(?:state|cluster-alt|cluster|note)(?= |$)/g, ”).
 func stripMermaidClasses(s string) string {
 	const prefix = "statediagram-"
@@ -820,7 +816,7 @@ func draw(db *stateDb, config *jsobj.Object, rc *core.Context, turned bool) core
 		if ce.Src == ce.Dst || len(ce.Route) < 6 || drawn[i].dashed {
 			continue
 		}
-		reach.Add(ce.Dst, svg.EndSide(ce.Route, len(ce.Route)-3, box(&cnodes[ce.Dst])), "arrow_point")
+		reach.Add(ce.Dst, svg.EndSide(ce.Route, len(ce.Route)-3, &cnodes[ce.Dst]), "arrow_point")
 	}
 
 	var edgesOut, labelsOut strings.Builder
@@ -901,8 +897,8 @@ func draw(db *stateDb, config *jsobj.Object, rc *core.Context, turned bool) core
 			}
 		} else {
 			route := slices.Clone(ce.Route)
-			leaves := reach.Of(ce.Src, svg.EndSide(route, 0, box(&cnodes[ce.Src])))
-			arrives := reach.Of(ce.Dst, svg.EndSide(route, len(route)-3, box(&cnodes[ce.Dst])))
+			leaves := reach.Of(ce.Src, svg.EndSide(route, 0, &cnodes[ce.Src]))
+			arrives := reach.Of(ce.Dst, svg.EndSide(route, len(route)-3, &cnodes[ce.Dst]))
 			for k := 0; k < len(route); k += 3 {
 				route[k] += pad
 				route[k+1] += pad

@@ -4,15 +4,9 @@ import (
 	"math"
 
 	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
+	"github.com/Broderick-Westrope/pele-go/internal/layout"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
 )
-
-// Box is what the drawing code reads of a node the compound layout placed (upstream's CNode
-// from layout/compound.ts): its center, its size, and whether it is a group.
-type Box struct {
-	X, Y, W, H float64
-	IsGroup    bool
-}
 
 // Crossings holds the x of every route point, by its rounded y: the edges that cross a
 // cluster's top border. Only looked up by key, so a Go map serves for upstream's Map.
@@ -28,7 +22,7 @@ func MarkCrossings(crossings Crossings, route []float64) {
 
 // ClusterTitleX picks where a cluster title sits along the top edge so that edges entering
 // there do not cross it.
-func ClusterTitleX(c Box, width float64, crossings Crossings, pad float64) float64 {
+func ClusterTitleX(c *layout.CNode, width float64, crossings Crossings, pad float64) float64 {
 	if width == 0 {
 		return c.X
 	}
@@ -62,7 +56,7 @@ func ClusterTitleX(c Box, width float64, crossings Crossings, pad float64) float
 
 // TitleCrossed reports whether an edge that enters at the top runs through a title placed
 // at x.
-func TitleCrossed(c Box, width, x float64, crossings Crossings) bool {
+func TitleCrossed(c *layout.CNode, width, x float64, crossings Crossings) bool {
 	if !(width > 0) {
 		return false
 	}

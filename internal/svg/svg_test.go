@@ -5,6 +5,7 @@ import (
 
 	"github.com/Broderick-Westrope/pele-go/internal/fixture"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
+	"github.com/Broderick-Westrope/pele-go/internal/layout"
 	"github.com/Broderick-Westrope/pele-go/internal/svg"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
 )
@@ -15,9 +16,9 @@ func num(o *jsobj.Object, key string) float64 {
 	return f
 }
 
-func box(o *jsobj.Object) svg.Box {
+func box(o *jsobj.Object) *layout.CNode {
 	group, _ := o.Get("isGroup")
-	return svg.Box{X: num(o, "x"), Y: num(o, "y"), W: num(o, "w"), H: num(o, "h"), IsGroup: group == true}
+	return &layout.CNode{X: num(o, "x"), Y: num(o, "y"), W: num(o, "w"), H: num(o, "h"), IsGroup: group == true}
 }
 
 func label(s string) text.Label {

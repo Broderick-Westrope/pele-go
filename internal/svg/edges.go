@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
+	"github.com/Broderick-Westrope/pele-go/internal/layout"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
 )
 
@@ -55,16 +56,6 @@ func (r *SideReach) Of(node, side int) float64 {
 		return 0
 	}
 	return r.reach[node*4+side]
-}
-
-// ease is layout/layered.ts's ease, which edges.ts imports: how far the handles of an S
-// reach, as a share of its run along the flow.
-func ease(across, along float64) float64 {
-	a := math.Abs(across)
-	if a == 0 || math.IsNaN(a) {
-		a = 1
-	}
-	return max(0.25, min(0.5, float64(4*math.Abs(along))/a))
 }
 
 // signOr1 is Math.sign(v) || 1.
@@ -230,7 +221,7 @@ func RoutePath(route []float64, curve string, startTrim, endTrim, startReach, en
 			} else {
 				run, across = x-atX, y-atY
 			}
-			k := float64(math.Abs(run) * ease(across, run))
+			k := float64(math.Abs(run) * layout.Ease(across, run))
 			var ux, uy float64
 			if down {
 				uy = float64(sign(run) * k)

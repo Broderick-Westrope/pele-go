@@ -86,10 +86,6 @@ type nodeView struct {
 	loops int
 }
 
-func box(c *layout.CNode) svg.Box {
-	return svg.Box{X: c.X, Y: c.Y, W: c.W, H: c.H, IsGroup: c.IsGroup}
-}
-
 // stripDefault is s.replace(/^default\s?/, ”).
 func stripDefault(s string) string {
 	if !strings.HasPrefix(s, "default") {
@@ -405,7 +401,7 @@ func draw(db *agentflowDb, config *jsobj.Object, rc *core.Context, turned bool) 
 		if out {
 			at = 0
 		}
-		svg.InsetRoute(drawnRoute, at, views[i].shape, views[i].w, views[i].h, box(n))
+		svg.InsetRoute(drawnRoute, at, views[i].shape, views[i].w, views[i].h, n)
 		trim := svg.MarkerTrim(h.edge.arrowTypeEnd)
 		heldPaths = append(heldPaths, svg.RoutePath(drawnRoute, "linear", 0, trim, svg.DefaultReach(0), svg.DefaultReach(trim)))
 	}
@@ -439,7 +435,7 @@ func draw(db *agentflowDb, config *jsobj.Object, rc *core.Context, turned bool) 
 			colorIndex = kindCount
 		}
 		if c.IsGroup {
-			titleX := svg.ClusterTitleX(box(c), view.label.Width, crossings, groupPad)
+			titleX := svg.ClusterTitleX(c, view.label.Width, crossings, groupPad)
 			clusters.WriteString(`<g class="pele-cluster pele-flow` + classes + `" data-id="` + id + `">` +
 				`<rect x="` + svg.Num(x-float64(c.W/2)) + `" y="` + svg.Num(y-float64(c.H/2)) + `" width="` + svg.Num(c.W) + `" height="` + svg.Num(c.H) +
 				`" rx="` + svg.Radius + `"` + tint(colorIndex, "0.06", view.style) + view.style.Shape + `/>` +
@@ -550,8 +546,8 @@ func draw(db *agentflowDb, config *jsobj.Object, rc *core.Context, turned bool) 
 		} else {
 			route := append([]float64{}, ce.Route...)
 			src, dst := views[ce.Src], views[ce.Dst]
-			svg.InsetRoute(route, 0, src.shape, src.w, src.h, box(&cnodes[ce.Src]))
-			svg.InsetRoute(route, len(route)-3, dst.shape, dst.w, dst.h, box(&cnodes[ce.Dst]))
+			svg.InsetRoute(route, 0, src.shape, src.w, src.h, &cnodes[ce.Src])
+			svg.InsetRoute(route, len(route)-3, dst.shape, dst.w, dst.h, &cnodes[ce.Dst])
 			trim := svg.MarkerTrim(endType)
 			path = svg.RoutePath(route, curveName(edge.curve), 0, trim, svg.DefaultReach(0), svg.DefaultReach(trim))
 		}

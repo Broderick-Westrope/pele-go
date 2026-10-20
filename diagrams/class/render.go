@@ -91,10 +91,6 @@ func memberLine(member *classMember, measurer text.Measurer, size float64) line 
 	return line{text: t, width: measurer.Width(t, size, style), classifier: member.classifier}
 }
 
-func box(c *layout.CNode) svg.Box {
-	return svg.Box{X: c.X, Y: c.Y, W: c.W, H: c.H, IsGroup: c.IsGroup}
-}
-
 // trimDefault is s.replace(/^default\s?/, ”).
 func trimDefault(s string) string {
 	rest, ok := strings.CutPrefix(s, "default")
@@ -455,7 +451,7 @@ func draw(db *classDb, config *jsobj.Object, rc *core.Context, turned, tight boo
 	attach := func(ce *layout.CEdge, at, item int, room float64, order int) *end {
 		route := ce.Route
 		c := &cnodes[item]
-		side := svg.EndSide(route, at, box(c))
+		side := svg.EndSide(route, at, c)
 		if side < 0 {
 			return nil
 		}
@@ -789,11 +785,11 @@ func draw(db *classDb, config *jsobj.Object, rc *core.Context, turned, tight boo
 		if node.isGroup {
 			titleX := c.X
 			if c.IsGroup {
-				titleX = svg.ClusterTitleX(box(c), v.label.Width, crossings, groupPad)
+				titleX = svg.ClusterTitleX(c, v.label.Width, crossings, groupPad)
 			}
 			titleY := y - float64(h/2) + 8 + float64(v.label.Height/2)
 			const titleAttrs = ` class="pele-cluster-label" fill="var(--_m)"`
-			struck := c.IsGroup && svg.TitleCrossed(box(c), v.label.Width, titleX, crossings)
+			struck := c.IsGroup && svg.TitleCrossed(c, v.label.Width, titleX, crossings)
 			if struck {
 				struckTitles.WriteString(svg.StruckTitle(v.label, titleX+ox, titleY, titleAttrs, id, parentOf, i, nil))
 			}
