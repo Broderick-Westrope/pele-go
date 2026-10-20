@@ -294,10 +294,6 @@ func (p *v8Parser) scanLiteral(word string) {
 
 func isDecimal(c int) bool { return c >= '0' && c <= '9' }
 
-func isNumberPart(c int) bool {
-	return isDecimal(c) || c == '.' || c == 'e' || c == 'E' || c == '-' || c == '+'
-}
-
 // scanNumber is V8's ParseJsonNumber, with the cursor on the sign or the first digit.
 func (p *v8Parser) scanNumber() {
 	c := p.at(p.i)
