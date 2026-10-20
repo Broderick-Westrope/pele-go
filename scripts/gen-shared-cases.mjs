@@ -406,6 +406,8 @@ section('common', () => {
 });
 
 for (const [name, build] of Object.entries(sections)) {
+  // Each section starts from the same seed, so adding cases to one leaves the others as they are.
+  seed = 0x2545f491;
   const target = { util: 'internal/util', svg: 'internal/svg', common: 'internal/diagrams/common', jsmath: 'internal/jsmath' }[name];
   write(`${target}/testdata/cases.json`, build());
 }
