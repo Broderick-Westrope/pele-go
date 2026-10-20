@@ -44,7 +44,7 @@ func TestCapturedParity(t *testing.T) {
 	}
 }
 
-func readShard(t *testing.T, name string) []*jsobj.Object {
+func readShard(t testing.TB, name string) []*jsobj.Object {
 	t.Helper()
 	f, err := os.Open(filepath.Join("internal", "oracle", "testdata", "captured", name+".jsonl.gz"))
 	if err != nil {
@@ -95,10 +95,12 @@ func replay(t *testing.T, rec *jsobj.Object) {
 		}
 	case "render":
 		src := get[string](rec, "src")
-		res, err := core.Render(ctx, src, capturedOptions(t, rec))
+		opts := capturedOptions(t, rec)
+		res, err := core.Render(ctx, src, opts)
 		if got := outcomeHash(t, res, err); got != want {
 			t.Errorf("render %q with %s: outcome differs from upstream (error %v)", src, describeOptions(rec), err)
 		}
+		checkPublic(t, src, opts, res, err)
 	case "render-model":
 		parse := get[*jsobj.Object](rec, "parse")
 		src := get[string](parse, "src")
@@ -112,6 +114,29 @@ func replay(t *testing.T, rec *jsobj.Object) {
 		}
 	default:
 		t.Fatalf("unknown captured call %q", call)
+	}
+}
+
+// checkPublic checks pele.Render gives the well-formed form of the lossless result.
+func checkPublic(t *testing.T, src string, opts pele.Options, lossless core.Result, losslessErr error) {
+	t.Helper()
+	public, err := pele.Render(context.Background(), src, opts)
+	if losslessErr != nil {
+		var want, got *pele.Error
+		if !errors.As(losslessErr, &want) || !errors.As(err, &got) ||
+			got.Message != jsstr.WellFormed(want.Message) || got.Snippet != jsstr.WellFormed(want.Snippet) || got.Code != want.Code {
+			t.Errorf("render %q: public error %v does not match lossless %v", src, err, losslessErr)
+		}
+		return
+	}
+	if err != nil || public.SVG != jsstr.WellFormed(lossless.SVG) || len(public.Links) != len(lossless.Links) {
+		t.Errorf("render %q: public result does not match lossless (error %v)", src, err)
+		return
+	}
+	for i, l := range lossless.Links {
+		if public.Links[i].ID != jsstr.WellFormed(l.ID) || public.Links[i].Href != jsstr.WellFormed(l.Href) {
+			t.Errorf("render %q: public link %d does not match lossless", src, i)
+		}
 	}
 }
 

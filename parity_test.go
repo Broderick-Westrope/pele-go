@@ -159,12 +159,24 @@ func TestDetectTypeParity(t *testing.T) {
 	}
 }
 
-func FuzzInfoParity(f *testing.F) {
-	for _, src := range infoInputs {
-		if len(src) < 1000 {
+// fuzzSeeds are the info inputs the parity gates know: hand-written, from the corpus, and
+// from upstream's test suite as captured.
+func fuzzSeeds(f *testing.F, extra ...string) {
+	seeds := append(append(slices.Clone(infoInputs), extra...), corpus(f, "info-docs.json")...)
+	for _, rec := range readShard(f, "info") {
+		if src, ok := rec.Get("src"); ok {
+			seeds = append(seeds, src.(string))
+		}
+	}
+	for _, src := range seeds {
+		if len(src) < 2000 {
 			f.Add(src)
 		}
 	}
+}
+
+func FuzzInfoParity(f *testing.F) {
+	fuzzSeeds(f)
 	o := newOracle(f)
 	f.Fuzz(func(t *testing.T, src string) {
 		if typ, err := o.DetectType(src); err == nil && typ != "" && typ != "info" {
@@ -302,12 +314,15 @@ func compare(t *testing.T, label, src string, opts pele.Options, want *oracle.Re
 	if string(public.Type) != want.Type || public.MermaidType != want.MermaidType {
 		t.Errorf("%s: render %q type = %s/%s, want %s/%s", label, src, public.Type, public.MermaidType, want.Type, want.MermaidType)
 	}
-	gotLinks := make([]oracle.Link, len(public.Links))
-	for i, l := range public.Links {
-		gotLinks[i] = oracle.Link{ID: l.ID, Href: l.Href, Internal: l.Internal}
+	wantPublic := make([]oracle.Link, len(want.Links))
+	for i, l := range want.Links {
+		wantPublic[i] = oracle.Link{ID: jsstr.WellFormed(l.ID), Href: jsstr.WellFormed(l.Href), Internal: l.Internal}
 	}
-	if !slices.Equal(gotLinks, want.Links) {
-		t.Errorf("%s: render %q links = %+v, want %+v", label, src, gotLinks, want.Links)
+	if got := oracleLinks(lossless.Links); !slices.Equal(got, want.Links) {
+		t.Errorf("%s: render %q links (lossless) = %+v, want %+v", label, src, got, want.Links)
+	}
+	if got := oracleLinks(public.Links); !slices.Equal(got, wantPublic) {
+		t.Errorf("%s: render %q links (public) = %+v, want %+v", label, src, got, wantPublic)
 	}
 }
 
@@ -354,6 +369,14 @@ func TestInfoParityV8(t *testing.T) {
 	}
 }
 
+func oracleLinks(links []pele.Link) []oracle.Link {
+	out := make([]oracle.Link, len(links))
+	for i, l := range links {
+		out[i] = oracle.Link{ID: l.ID, Href: l.Href, Internal: l.Internal}
+	}
+	return out
+}
+
 func outputHasLoneSurrogate(src string, opts pele.Options) bool {
 	res, err := core.Render(context.Background(), src, opts)
 	if pe := (*pele.Error)(nil); errors.As(err, &pe) {
@@ -369,11 +392,7 @@ func hasLoneSurrogate(s string) bool {
 // FuzzInfoParityV8 fuzzes against Pele in Node, which is slower than goja but judges lone
 // surrogates correctly.
 func FuzzInfoParityV8(f *testing.F) {
-	for _, src := range append(infoInputs, loneSurrogateInputs...) {
-		if len(src) < 1000 {
-			f.Add(src)
-		}
-	}
+	fuzzSeeds(f, loneSurrogateInputs...)
 	node, err := oracle.NewNode()
 	if errors.Is(err, exec.ErrNotFound) {
 		f.Skip("node is not installed")
