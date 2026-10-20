@@ -1,0 +1,102 @@
+package er
+
+// Token kinds.
+const (
+	tEnd = iota
+	tError
+	tErDiagram
+	tEOF
+	tNewline
+	tColon
+	tStyleSeparator
+	tBlockStart
+	tBlockStop
+	tSQS
+	tSQE
+	tAccTitle
+	tAccTitleValue
+	tAccDescr
+	tAccDescrValue
+	tAccDescrMultilineValue
+	tEndKw
+	tSubgraph
+	tDirectionTB
+	tDirectionBT
+	tDirectionRL
+	tDirectionLR
+	tClassDef
+	tUnicodeText
+	tStyleText
+	tComma
+	tClass
+	tStyle
+	tSemi
+	tNum
+	tBrkt
+	tEntityName
+	tDecimalNum
+	tEntityOne
+	tAttributeWord
+	tAttributeKey
+	tComment
+	tZeroOrOne
+	tZeroOrMore
+	tOneOrMore
+	tOnlyOne
+	tMdParent
+	tNonIdentifying
+	tIdentifying
+	tWord
+	// tChar is a character no rule names; the grammar gives it meaning only as `?` and `,`
+	// inside a block.
+	tChar
+)
+
+var tokenNames = [...]string{
+	"$end",
+	"INVALID",
+	"ER_DIAGRAM",
+	"EOF",
+	"NEWLINE",
+	"COLON",
+	"STYLE_SEPARATOR",
+	"BLOCK_START",
+	"BLOCK_STOP",
+	"SQS",
+	"SQE",
+	"acc_title",
+	"acc_title_value",
+	"acc_descr",
+	"acc_descr_value",
+	"acc_descr_multiline_value",
+	"END",
+	"SUBGRAPH",
+	"direction_tb",
+	"direction_bt",
+	"direction_rl",
+	"direction_lr",
+	"CLASSDEF",
+	"UNICODE_TEXT",
+	"STYLE_TEXT",
+	"COMMA",
+	"CLASS",
+	"STYLE",
+	"SEMI",
+	"NUM",
+	"BRKT",
+	"ENTITY_NAME",
+	"DECIMAL_NUM",
+	"ENTITY_ONE",
+	"ATTRIBUTE_WORD",
+	"ATTRIBUTE_KEY",
+	"COMMENT",
+	"ZERO_OR_ONE",
+	"ZERO_OR_MORE",
+	"ONE_OR_MORE",
+	"ONLY_ONE",
+	"MD_PARENT",
+	"NON_IDENTIFYING",
+	"IDENTIFYING",
+	"WORD",
+	"CHAR",
+}
