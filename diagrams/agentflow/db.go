@@ -1054,3 +1054,134 @@ func (db *agentflowDb) emitWarning(id, message, nodeID string) {
 func (db *agentflowDb) emitError(id, message, nodeID string) {
 	db.emit(id, "error", message, nodeID)
 }
+
+func (p *elementPosition) object() *jsobj.Object {
+	o := jsobj.New()
+	o.Set("startLine", float64(p.startLine))
+	o.Set("startColumn", float64(p.startColumn))
+	o.Set("endLine", float64(p.endLine))
+	o.Set("endColumn", float64(p.endColumn))
+	o.Set("startIndex", float64(p.startIndex))
+	o.Set("endIndex", float64(p.endIndex))
+	return o
+}
+
+func (d *diagnostic) object() *jsobj.Object {
+	o := jsobj.New()
+	o.Set("id", d.id)
+	o.Set("severity", d.severity)
+	o.Set("message", d.message)
+	if d.nodeID != "" {
+		o.Set("nodeId", d.nodeID)
+	} else if d.edgeID != "" {
+		o.Set("edgeId", d.edgeID)
+	}
+	if d.position != nil {
+		o.Set("position", d.position.object())
+	}
+	return o
+}
+
+func anyList(list []string) []any {
+	out := make([]any, len(list))
+	for i, s := range list {
+		out[i] = s
+	}
+	return out
+}
+
+// semanticModel is the diagram with presentation-only controls left out, for tools that read
+// what it means, as JSON values.
+func (db *agentflowDb) semanticModel() *jsobj.Object {
+	vertices := []any{}
+	connectors := []any{}
+	for id, v := range db.nodes.All() {
+		if db.subgraphLookup[id] != nil {
+			continue
+		}
+		metadata := semanticMetadata(v.metadata)
+		if v.isConnector {
+			connector := jsobj.New()
+			connector.Set("id", id)
+			if v.text != id {
+				connector.Set("title", v.text)
+			}
+			if metadata != nil {
+				connector.Set("metadata", metadata)
+			}
+			connectors = append(connectors, connector)
+			continue
+		}
+		vertex := jsobj.New()
+		vertex.Set("id", id)
+		vertex.Set("label", v.text)
+		if shape := resolveShapeAlias(v.typ); shape != "" {
+			vertex.Set("shape", shape)
+		}
+		vertex.Set("vertexKind", db.vertexKind(v))
+		if metadata != nil {
+			vertex.Set("metadata", metadata)
+		}
+		vertices = append(vertices, vertex)
+	}
+
+	edges := []any{}
+	for _, e := range db.edges {
+		edge := jsobj.New()
+		edge.Set("start", e.start)
+		edge.Set("end", e.end)
+		if e.id != "" {
+			edge.Set("id", e.id)
+		}
+		if e.text != "" {
+			edge.Set("label", e.text)
+		}
+		if e.typ != "" {
+			edge.Set("type", e.typ)
+		}
+		if e.stroke != "" {
+			edge.Set("stroke", e.stroke)
+		}
+		if e.edgeSemantic != "" {
+			edge.Set("edgeSemantic", e.edgeSemantic)
+		}
+		if e.length != 0 {
+			edge.Set("length", e.length)
+		}
+		if e.metadata.Len() > 0 {
+			edge.Set("metadata", e.metadata.Clone())
+		}
+		edges = append(edges, edge)
+	}
+
+	subGraphs := []any{}
+	for _, sg := range db.subgraphs {
+		out := jsobj.New()
+		out.Set("id", sg.id)
+		out.Set("nodes", anyList(sg.nodes))
+		out.Set("type", "flow")
+		out.Set("title", sg.title)
+		if sg.dir != "" {
+			out.Set("direction", sg.dir)
+		}
+		if metadata := semanticMetadata(sg.metadata); metadata != nil {
+			out.Set("metadata", metadata)
+		}
+		subGraphs = append(subGraphs, out)
+	}
+
+	diagnostics := []any{}
+	for _, d := range db.diagnostics {
+		diagnostics = append(diagnostics, d.object())
+	}
+	model := jsobj.New()
+	model.Set("vertices", vertices)
+	model.Set("edges", edges)
+	model.Set("subGraphs", subGraphs)
+	model.Set("connectors", connectors)
+	model.Set("diagnostics", diagnostics)
+	if db.direction != "" {
+		model.Set("direction", db.direction)
+	}
+	return model
+}
