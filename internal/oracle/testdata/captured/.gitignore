@@ -1,0 +1,4 @@
+# Shards are committed as their diagram type is ported; scripts/capture-cases.mjs writes all of them.
+*.jsonl.gz
+!info.jsonl.gz
+!none.jsonl.gz

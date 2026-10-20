@@ -272,25 +272,50 @@ func tagErrors(found detect.Detected, fn func()) {
 	fn()
 }
 
-// Render renders Mermaid source to SVG. The SVG keeps lone surrogates; see Result.
-func Render(ctx context.Context, source string, opts Options) (res Result, err error) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			return
-		}
-		switch e := r.(type) {
-		case *perr.Error:
-			e.Message, e.Snippet = jsstr.Canonical(e.Message), jsstr.Canonical(e.Snippet)
-			err = e
-		case perr.RangeError:
-			err = perr.New("Diagram is nested too deeply.", perr.Limit)
-		default:
-			panic(r)
-		}
-	}()
+// recoverInto turns a thrown error into err, as upstream's guarded() does at the edge of
+// the public API.
+func recoverInto(err *error) {
+	r := recover()
+	if r == nil {
+		return
+	}
+	switch e := r.(type) {
+	case *perr.Error:
+		e.Message, e.Snippet = jsstr.Canonical(e.Message), jsstr.Canonical(e.Snippet)
+		*err = e
+	case perr.RangeError:
+		*err = perr.New("Diagram is nested too deeply.", perr.Limit)
+	default:
+		panic(r)
+	}
+}
+
+// Parsed is a parsed diagram, ready to render.
+type Parsed struct {
+	p parsed
+}
+
+// Parse parses source with the options read at parse time (Limit, MaxEdges, Config), as
+// upstream's parse() does. Render options given to RenderParsed later do not change them.
+func Parse(ctx context.Context, source string, opts Options) (res *Parsed, err error) {
+	defer recoverInto(&err)
 	checkContext(ctx)
-	p := parseSource(ctx, jsstr.Normalize(source), opts)
+	return &Parsed{p: parseSource(ctx, jsstr.Normalize(source), opts)}, nil
+}
+
+// Render renders Mermaid source to SVG. The SVG keeps lone surrogates; see Result.
+func Render(ctx context.Context, source string, opts Options) (Result, error) {
+	parsed, err := Parse(ctx, source, opts)
+	if err != nil {
+		return Result{}, err
+	}
+	return RenderParsed(ctx, parsed, opts)
+}
+
+// RenderParsed renders a diagram Parse returned, as upstream's render(model) does.
+func RenderParsed(ctx context.Context, parsed *Parsed, opts Options) (res Result, err error) {
+	defer recoverInto(&err)
+	p := parsed.p
 
 	section := p.diagram.Section
 	if section == "" {
