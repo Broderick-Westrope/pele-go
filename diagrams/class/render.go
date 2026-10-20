@@ -459,7 +459,7 @@ func draw(db *classDb, config *jsobj.Object, rc *core.Context, turned, tight boo
 		if side < 0 {
 			return nil
 		}
-		slack := (c.W - views[item].w) / 2
+		slack := float64((c.W - views[item].w) / 2)
 		if side == 1 {
 			route[at] -= slack
 		} else if side == 3 {
@@ -712,8 +712,8 @@ func draw(db *classDb, config *jsobj.Object, rc *core.Context, turned, tight boo
 
 	classSvg := func(v *view, cls *classNode, id, at string) string {
 		w, h, style := v.w, v.h, v.style
-		left := -w / 2
-		top := -h / 2
+		left := float64(-w / 2)
+		top := float64(-h / 2)
 		memberSize := jsmath.Round(v.fontSize * 0.875)
 		lineHeight := jsmath.Round(memberSize * 1.5)
 		body := `<rect x="` + num(left) + `" y="` + num(top) + `" width="` + num(w) + `" height="` + num(h) + `" rx="` + svg.Radius + `" fill="var(--_s)" stroke="var(--_b)"` + style.Shape + `/>`
@@ -810,8 +810,8 @@ func draw(db *classDb, config *jsobj.Object, rc *core.Context, turned, tight boo
 		case node.classNode != nil:
 			nodesOut.WriteString(classSvg(v, node.classNode, id, at))
 		case node.shape == shapeNote:
-			r := w / 2
-			t := -h / 2
+			r := float64(w / 2)
+			t := float64(-h / 2)
 			nodesOut.WriteString(`<g class="pele-node pele-note" data-id="` + id + `"` + at + `>` +
 				`<path d="M` + num(-r) + `,` + num(t) + `H` + num(r-fold) + `L` + num(r) + `,` + num(t+fold) + `V` + num(-t) + `H` + num(-r) + `Z" fill="var(--_a)" stroke="var(--_b)" stroke-linejoin="round"/>` +
 				`<path d="M` + num(r-fold) + `,` + num(t) + `V` + num(t+fold) + `H` + num(r) + `" fill="none" stroke="var(--_b)" stroke-linejoin="round"/>` +

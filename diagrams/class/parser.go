@@ -256,7 +256,6 @@ func parseClassDiagram(source string, db *classDb) {
 		title1 := "none"
 		if t == tStr {
 			title1 = take()
-			t = types[i]
 		} else if endType(t) == relationNone && t != tLine && t != tDottedLine {
 			return
 		}
