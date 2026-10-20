@@ -113,3 +113,53 @@ func isDecimalLiteral(s string) bool {
 	}
 	return i == len(s)
 }
+
+// ParseFloat returns parseFloat(s): the longest decimal literal, or Infinity, at the start of
+// s after JS whitespace, with an optional sign. Anything else is NaN.
+func ParseFloat(s string) float64 {
+	s = jsstr.TrimStart(s)
+	i := 0
+	if i < len(s) && (s[i] == '+' || s[i] == '-') {
+		i++
+	}
+	if strings.HasPrefix(s[i:], "Infinity") {
+		if s[0] == '-' {
+			return math.Inf(-1)
+		}
+		return math.Inf(1)
+	}
+	digits := func() int {
+		n := 0
+		for i < len(s) && s[i] >= '0' && s[i] <= '9' {
+			i++
+			n++
+		}
+		return n
+	}
+	mantissa := digits()
+	if i < len(s) && s[i] == '.' {
+		i++
+		mantissa += digits()
+		if mantissa == 0 {
+			return math.NaN()
+		}
+	}
+	if mantissa == 0 {
+		return math.NaN()
+	}
+	end := i
+	if i < len(s) && (s[i] == 'e' || s[i] == 'E') {
+		i++
+		if i < len(s) && (s[i] == '+' || s[i] == '-') {
+			i++
+		}
+		if digits() > 0 {
+			end = i
+		}
+	}
+	v, err := strconv.ParseFloat(s[:end], 64)
+	if err != nil && !strings.Contains(err.Error(), "range") {
+		return math.NaN()
+	}
+	return v
+}

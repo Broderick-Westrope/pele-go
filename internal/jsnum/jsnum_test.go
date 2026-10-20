@@ -68,3 +68,28 @@ func TestParseRoundsLargeHexLikeV8(t *testing.T) {
 		t.Fatalf("Parse = %v, want %v", got, want)
 	}
 }
+
+func TestParseFloatMatchesJS(t *testing.T) {
+	vm := goja.New()
+	parseFloat, ok := goja.AssertFunction(vm.Get("parseFloat"))
+	if !ok {
+		t.Fatal("parseFloat is not a function")
+	}
+	inputs := []string{
+		"", "1", "-1", "+1", "1.5px", "  \n\t 12", ".5", "5.", ".", "-.5e3x", "1e", "1e+", "1e-2", "1.2.3",
+		"Infinity", "-Infinityx", "+Inf", "infinity", "0x10", "1_000", "00012", "-0", "1e400", "1e-400",
+		"\u00a012", "\u202812", "12\u00a0", "e5", "..5", "+-1", "١٢", "3.14159265358979323846264338327950288",
+		"9007199254740993", "0.1e1.5", " +.e1", "5e-324", "2.4703282292062328e-324",
+	}
+	for _, in := range inputs {
+		want, err := parseFloat(goja.Undefined(), vm.ToValue(in))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := jsnum.ParseFloat(in)
+		w := want.ToFloat()
+		if !(got == w && math.Signbit(got) == math.Signbit(w)) && !(math.IsNaN(got) && math.IsNaN(w)) {
+			t.Errorf("ParseFloat(%q) = %v, want %v", in, got, w)
+		}
+	}
+}
