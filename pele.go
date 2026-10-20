@@ -9,6 +9,7 @@ package pele
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
@@ -87,17 +88,28 @@ func Register(diagrams ...*Diagram) {
 }
 
 // Render renders Mermaid source to SVG. Failures are returned as *Error. Render is safe for
-// concurrent use.
+// concurrent use. Strings in the result and in errors are valid UTF-8.
 func Render(ctx context.Context, source string, opts Options) (Result, error) {
 	res, err := core.Render(ctx, source, opts)
 	if err != nil {
+		var pe *perr.Error
+		if errors.As(err, &pe) {
+			wellFormed := *pe
+			wellFormed.Message = jsstr.WellFormed(pe.Message)
+			wellFormed.Snippet = jsstr.WellFormed(pe.Snippet)
+			return Result{}, &wellFormed
+		}
 		return Result{}, err
+	}
+	links := make([]Link, len(res.Links))
+	for i, l := range res.Links {
+		links[i] = Link{ID: jsstr.WellFormed(l.ID), Href: jsstr.WellFormed(l.Href), Internal: l.Internal}
 	}
 	return Result{
 		SVG:         jsstr.WellFormed(res.SVG),
 		Width:       res.Width,
 		Height:      res.Height,
-		Links:       res.Links,
+		Links:       links,
 		Type:        DiagramType(res.Type),
 		MermaidType: res.MermaidType,
 	}, nil
