@@ -2,7 +2,10 @@ module github.com/Broderick-Westrope/pele-go
 
 go 1.26.0
 
-require github.com/dop251/goja v0.0.0-20261010130053-73dc7edc278f
+require (
+	github.com/dop251/goja v0.0.0-20261010130053-73dc7edc278f
+	golang.org/x/image v0.45.0
+)
 
 require (
 	github.com/dlclark/regexp2/v2 v2.8.1 // indirect
