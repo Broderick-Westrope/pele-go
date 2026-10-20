@@ -19,7 +19,7 @@ func Parse(s string, loc *time.Location) Date {
 	if math.IsNaN(out[outUTCOffset]) {
 		date = localToUTC(loc, date)
 	} else {
-		date -= out[outUTCOffset] * 1000
+		date = math.FMA(-out[outUTCOffset], 1000, date)
 	}
 	return Date{t: timeClip(date), loc: loc}
 }
