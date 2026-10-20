@@ -57,6 +57,9 @@ func UTC(year, month, day, hours, minutes, seconds, ms float64) float64 {
 // Time is getTime(): the time value, NaN for an invalid date.
 func (d Date) Time() float64 { return d.t }
 
+// Location is the time zone the date is read in.
+func (d Date) Location() *time.Location { return d.loc }
+
 // Valid reports whether the date is not an Invalid Date.
 func (d Date) Valid() bool { return !math.IsNaN(d.t) }
 
