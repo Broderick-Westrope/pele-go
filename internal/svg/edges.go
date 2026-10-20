@@ -69,17 +69,6 @@ func signOr1(v float64) float64 {
 	return 1
 }
 
-// sign is Math.sign.
-func sign(v float64) float64 {
-	switch {
-	case v > 0:
-		return 1
-	case v < 0:
-		return -1
-	}
-	return v
-}
-
 // DefaultReach is how far from its node an edge starts to turn when nothing beside it needs
 // more: far enough to clear its own marker.
 func DefaultReach(trim float64) float64 {
@@ -224,9 +213,9 @@ func RoutePath(route []float64, curve string, startTrim, endTrim, startReach, en
 			k := float64(math.Abs(run) * layout.Ease(across, run))
 			var ux, uy float64
 			if down {
-				uy = float64(sign(run) * k)
+				uy = float64(jsmath.Sign(run) * k)
 			} else {
-				ux = float64(sign(run) * k)
+				ux = float64(jsmath.Sign(run) * k)
 			}
 			d += "C" + Num(atX+ux) + "," + Num(atY+uy) + " " + Num(x-ux) + "," + Num(y-uy) + " " + Num(x) + "," + Num(y)
 			atX, atY = x, y

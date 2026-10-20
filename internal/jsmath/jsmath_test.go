@@ -36,3 +36,21 @@ func TestRoundMatchesJS(t *testing.T) {
 		}
 	}
 }
+
+func TestSignMatchesJS(t *testing.T) {
+	vm := goja.New()
+	sign, ok := goja.AssertFunction(vm.Get("Math").ToObject(vm).Get("sign"))
+	if !ok {
+		t.Fatal("Math.sign is not a function")
+	}
+	for _, v := range []float64{0, math.Copysign(0, -1), math.NaN(), 3, -3, math.Inf(1), math.Inf(-1), 5e-324, -5e-324} {
+		res, err := sign(goja.Undefined(), vm.ToValue(v))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, got := res.ToFloat(), jsmath.Sign(v)
+		if math.Float64bits(got) != math.Float64bits(want) && !(math.IsNaN(got) && math.IsNaN(want)) {
+			t.Errorf("Sign(%v) = %v, want %v", v, got, want)
+		}
+	}
+}

@@ -92,17 +92,6 @@ func orOne(v float64) float64 {
 	return v
 }
 
-// sign is Math.sign.
-func sign(v float64) float64 {
-	switch {
-	case v > 0:
-		return 1
-	case v < 0:
-		return -1
-	}
-	return v
-}
-
 func isRound(v *view) bool {
 	return v.kind == kindLeaf && (v.shape == "circle" || v.shape == "dbl-circ")
 }
@@ -197,7 +186,7 @@ func crossesBox(x1, y1, x2, y2 float64, v *view) bool {
 	// The segment is diagonal and its bounding box overlaps: the box is hit unless all four corners are on one side.
 	dx := x2 - x1
 	dy := y2 - y1
-	side := func(x, y float64) float64 { return sign(float64(dx*(y-y1)) - float64(dy*(x-x1))) }
+	side := func(x, y float64) float64 { return jsmath.Sign(float64(dx*(y-y1)) - float64(dy*(x-x1))) }
 	first := side(l, t)
 	return first == 0 || side(r, t) != first || side(r, b) != first || side(l, b) != first
 }

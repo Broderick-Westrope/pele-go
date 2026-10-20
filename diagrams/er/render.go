@@ -733,20 +733,9 @@ func inset(route []float64, at int, view *nodeView, c *layout.CNode) {
 	dx := route[at] - c.X
 	dy := route[at+1] - c.Y
 	if c.W != view.w && math.Abs(math.Abs(dx)-float64(c.W/2)) < 0.5 {
-		route[at] -= float64(float64(sign(dx)*(c.W-view.w)) / 2)
+		route[at] -= float64(float64(jsmath.Sign(dx)*(c.W-view.w)) / 2)
 	}
 	if c.H != view.h && math.Abs(math.Abs(dy)-float64(c.H/2)) < 0.5 {
-		route[at+1] -= float64(float64(sign(dy)*(c.H-view.h)) / 2)
+		route[at+1] -= float64(float64(jsmath.Sign(dy)*(c.H-view.h)) / 2)
 	}
-}
-
-// sign is Math.sign.
-func sign(v float64) float64 {
-	switch {
-	case v > 0:
-		return 1
-	case v < 0:
-		return -1
-	}
-	return v
 }

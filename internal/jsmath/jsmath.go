@@ -61,3 +61,14 @@ func Hypot(values ...float64) float64 {
 	}
 	return float64(math.Sqrt(sum) * largest)
 }
+
+// Sign is Math.sign: NaN and both zeros are returned as they are.
+func Sign(v float64) float64 {
+	switch {
+	case v > 0:
+		return 1
+	case v < 0:
+		return -1
+	}
+	return v
+}

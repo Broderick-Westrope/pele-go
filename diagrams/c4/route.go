@@ -52,17 +52,6 @@ const (
 func cylRy(w float64) float64   { return min(12, max(6, w/14)) }
 func queueRx(h float64) float64 { return min(12, h/4) }
 
-// sign is Math.sign: NaN and both zeros are returned as they are.
-func sign(v float64) float64 {
-	switch {
-	case v > 0:
-		return 1
-	case v < 0:
-		return -1
-	}
-	return v
-}
-
 // truthy is a number's truth in JS: neither zero nor NaN.
 func truthy(v float64) bool { return v != 0 && v == v }
 
@@ -366,16 +355,16 @@ func (l *lanes) claim(b *box, side int, at float64) {
 
 func path(points []float64, startTrim, endTrim float64) string {
 	n := len(points)
-	ux := sign(points[2] - points[0])
-	uy := sign(points[3] - points[1])
+	ux := jsmath.Sign(points[2] - points[0])
+	uy := jsmath.Sign(points[3] - points[1])
 	d := "M" + svg.Num(points[0]+float64(ux*startTrim)) + "," + svg.Num(points[1]+float64(uy*startTrim))
 	for i := 2; i < n-2; i += 2 {
 		x := points[i]
 		y := points[i+1]
-		ix := sign(x - points[i-2])
-		iy := sign(y - points[i-1])
-		ox := sign(points[i+2] - x)
-		oy := sign(points[i+3] - y)
+		ix := jsmath.Sign(x - points[i-2])
+		iy := jsmath.Sign(y - points[i-1])
+		ox := jsmath.Sign(points[i+2] - x)
+		oy := jsmath.Sign(points[i+3] - y)
 		r := min(
 			corner,
 			math.Abs(x-points[i-2]+y-points[i-1])/2,
@@ -388,8 +377,8 @@ func path(points []float64, startTrim, endTrim float64) string {
 		}
 		d += "Q" + svg.Num(x) + "," + svg.Num(y) + " " + svg.Num(x+float64(ox*r)) + "," + svg.Num(y+float64(oy*r))
 	}
-	lx := sign(points[n-2] - points[n-4])
-	ly := sign(points[n-1] - points[n-3])
+	lx := jsmath.Sign(points[n-2] - points[n-4])
+	ly := jsmath.Sign(points[n-1] - points[n-3])
 	if truthy(lx) {
 		return d + "H" + svg.Num(points[n-2]-float64(lx*endTrim))
 	}
@@ -413,12 +402,12 @@ func bent(points []float64, along int, startTrim, endTrim float64, set func(r *r
 		d:    path(points, startTrim, endTrim),
 		sx:   points[0],
 		sy:   points[1],
-		sdx:  -sign(points[2] - points[0]),
-		sdy:  -sign(points[3] - points[1]),
+		sdx:  -jsmath.Sign(points[2] - points[0]),
+		sdy:  -jsmath.Sign(points[3] - points[1]),
 		ex:   points[n-2],
 		ey:   points[n-1],
-		edx:  sign(points[n-2] - points[n-4]),
-		edy:  sign(points[n-1] - points[n-3]),
+		edx:  jsmath.Sign(points[n-2] - points[n-4]),
+		edy:  jsmath.Sign(points[n-1] - points[n-3]),
 		x0:   points[along],
 		y0:   points[along+1],
 		x1:   points[along+2],
@@ -482,7 +471,7 @@ func elbow(a, b *box, others []*box, ls *lanes, startTrim, endTrim float64) (rou
 	}
 	if a.x+a.w <= b.x || b.x+b.w <= a.x {
 		right := bx > ax
-		down := sign(by - ay)
+		down := jsmath.Sign(by - ay)
 		sides := [2]int{0, 1}
 		lanesAcross := across(b.x+b.w, a.x)
 		if right {
@@ -506,7 +495,7 @@ func elbow(a, b *box, others []*box, ls *lanes, startTrim, endTrim float64) (rou
 	}
 	if a.y+a.h <= b.y || b.y+b.h <= a.y {
 		below := by > ay
-		sideways := sign(bx - ax)
+		sideways := jsmath.Sign(bx - ax)
 		sides := [2]int{2, 3}
 		lanesAcross := across(b.y+b.h, a.y)
 		if below {
@@ -668,9 +657,9 @@ func routeRel(a, b *box, shift float64, others []*box, careful bool, ls *lanes, 
 		ay := a.y + float64(a.h/2)
 		bx := b.x + float64(b.w/2)
 		by := b.y + float64(b.h/2)
-		towards := sign(bx - ax)
+		towards := jsmath.Sign(bx - ax)
 		if upright {
-			towards = sign(by - ay)
+			towards = jsmath.Sign(by - ay)
 		}
 		// The route on one side: each end leaves its shape a quarter of the way from the
 		// middle towards the other, clear of the straight lines that meet the middle of that
