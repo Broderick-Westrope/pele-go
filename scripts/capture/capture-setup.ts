@@ -104,7 +104,8 @@ vi.mock('../../src/core.js', async (importOriginal) => {
     const opts = { ...options };
     if (opts.now === undefined) opts.now = FIXED_NOW;
     // Icon names the render asks for, with the host's answers, for the replay to give back.
-    const iconTable = {};
+    // Without a prototype, so a name such as __proto__ is kept as a key.
+    const iconTable = Object.create(null);
     if (typeof opts.icons === 'function') {
       const host = opts.icons;
       opts.icons = (name) => {
