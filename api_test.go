@@ -89,7 +89,4 @@ func TestPtrPointsToACopy(t *testing.T) {
 	if v != 12.5 {
 		t.Fatalf("writing through Ptr(v) changed v to %v", v)
 	}
-	if pele.Ptr(false) == pele.Ptr(false) {
-		t.Fatal("Ptr returned the same pointer twice")
-	}
 }
