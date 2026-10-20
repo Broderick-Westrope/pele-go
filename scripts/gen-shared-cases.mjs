@@ -110,19 +110,6 @@ section('util', () => {
   chars.push([-1, tests.reduce((acc, f, k) => acc | (f(NaN) ? 1 << k : 0), 0)]);
   cases.push({ fn: 'chars', args: [], want: chars });
 
-  // Whether new URL() would run IDNA on the host: a host with anything but ASCII once
-  // percent-decoded, or an xn-- label. The port is exact only without it (see idna.go), so
-  // such inputs are kept to a few ordinary names.
-  const latin1 = (x) => { try { return new TextDecoder().decode(Uint8Array.from(unescape(x), (ch) => ch.charCodeAt(0) & 255)); } catch { return x; } };
-  const needsIDNA = (url) => {
-    const at = url.search(/https?:/i);
-    if (at === -1) return false;
-    let rest = url.slice(at).replace(/^[a-z]+:[\/\\]*/i, '');
-    rest = rest.split(/[\/\\?#]/)[0];
-    rest = rest.slice(rest.lastIndexOf('@') + 1).split(':')[0];
-    const host = latin1(rest);
-    return /[^\x00-\x7f]/.test(host) || /(^|\.)xn--/i.test(host) || /[^\x00-\x7f]/.test(rest);
-  };
   const reference = m.reference.sanitizeUrl;
   const urlPieces = ['http:', 'HTTP:', 'https:', 'https://', 'http://', 'javascript:', 'JaVaScRiPt:', ' ', '\n', '\t', '&#106;', '&#x6A;', '&#0000106',
     '&#55357;&#56832;', '&colon;', '&newline;', '&TAB;', '%6A', '%25', '%2525', '%E0%A4%A', '%C3%A4', '%0A', '%20', '%2e', '%2E%2e', '\\', '%5Cn', '\\t',
@@ -131,7 +118,6 @@ section('util', () => {
     '[::1]', ':80', ':0443', ':99999', '^', '|', '{', '`', '"', '<', "'", 'obsidian://open', '\ud800', 'note', 'C:\\x', '%EF%BB%BF'];
   for (let i = 0; i < 4000; i++) {
     const url = (random() < 0.6 ? pick(['http:', 'https:', 'HTTP:', ' http:']) : '') + compose(urlPieces, 6);
-    if (needsIDNA(url) || needsIDNA(m.url.sanitizeUrl(url))) continue;
     cases.push(call(m.url.sanitizeUrl, 'sanitizeUrl', [url]));
   }
   for (const url of ['https://example.com', 'http://EXAMPLE.com/Path?q=1#frag', 'click.html', './relative/path', '/absolute/path',
