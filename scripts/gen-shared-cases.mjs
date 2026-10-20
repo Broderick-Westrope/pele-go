@@ -3,7 +3,7 @@
 // they returned. Each Go package's tests replay its file through internal/fixture.
 //
 // Usage: node scripts/gen-shared-cases.mjs <pele checkout at 1.7.0>
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -127,6 +127,129 @@ section('jsmath', () => {
     cases.push(call(Math.hypot, 'hypot', xs));
   }
   cases.push(call(Math.hypot, 'hypot', [3, 4]), call(Math.hypot, 'hypot', [1e200, 1e200]), call(Math.hypot, 'hypot', [0, -0]));
+  return cases;
+});
+
+const metrics = m.measurer.metricsMeasurer;
+const int = (lo, hi) => lo + Math.floor(random() * (hi - lo + 1));
+const coord = () => pick([0, 10, 20, 48, 100, -30]) + (random() < 0.5 ? 0 : Math.round((random() - 0.5) * 2000) / 10);
+const labelTexts = ['', 'Hi', 'Hello world', 'A much longer label that has to wrap somewhere', '<b>bold</b> & <i>it</i>', '中文标签', 'a<br>b', '**md**'];
+
+section('svg', () => {
+  const cases = [];
+  const props = ['fill', 'FILL', 'Stroke', 'stroke-width', 'stroke-dasharray', 'color', 'font-size', 'font-weight', 'font-style',
+    'opacity', 'rx', 'fill-opacity', 'text-decoration', 'unknown', 'stro\u212Ae', ' fill ', 'f\u0130ll', '', 'font-family'];
+  const values = ['red', '#fff', '12px', '12', '2.5px', '300', 'bold', 'bolder', '600', '700', ' 0x258 ', 'italic', 'url(x)', 'URL (x)',
+    'javascript:alert(1)', 'a;b', 'x !important', 'x !IMPORTANT', '!important', '/* c */', 'image-set(a)', '@IMPORT', '', '  ',
+    '0', '201px', '200px', '..5', '1e2', 'expression\u00a0(x)', 'ur l(x)', 'a<b', 'a\\b', '"q"&amp;', '5 5'];
+  for (let i = 0; i < 1500; i++) {
+    const decls = [];
+    for (let n = int(0, 5); n > 0; n--) decls.push(pick(props) + pick([':', ' : ', '', '::']) + pick(values));
+    cases.push(call(m.theme.resolveStyle, 'resolveStyle', [decls]));
+  }
+  for (let i = 0; i < 300; i++) cases.push(call(m.theme.classNames, 'classNames', [compose(['a', 'B-c', '_', ' ', ',', '.x', 'é', '😀', '\t', '--', '9', '!!', ''], 6)]));
+  for (let i = -20; i <= 20; i++) cases.push(call(m.theme.seriesColor, 'seriesColor', [i]));
+
+  for (let i = 0; i < 120; i++) {
+    const args = [pick([...labelTexts, 'Quarterly results for the whole company and more']), pick([14, 16, 13.5]), pick([8, 0, 12.5]),
+      pick([0, 100, 333.3]), pick([0, 50, 77.7]), '<g/>'];
+    cases.push(call((t, size, pad, w, h, c) => m.title.withTitle(t || undefined, metrics, size, pad, w, h, c), 'withTitle', args));
+  }
+
+  for (let i = 0; i < 600; i++) {
+    const routes = [];
+    for (let r = int(0, 4); r > 0; r--) {
+      const route = [];
+      for (let p = int(1, 4); p > 0; p--) route.push(coord(), pick([-40, -39.6, 0, 20, coord()]), int(0, 1));
+      routes.push(route);
+    }
+    const c = { x: pick([0, 30, 100.5]), y: pick([0, 40, 20]), w: pick([80, 200, 33.3]), h: pick([80, 40, 61]) };
+    const width = pick([0, 30, 60, 120.5]);
+    const pad = pick([12, 8, 20]);
+    const crossings = new Map();
+    for (const route of routes) m.cluster.markCrossings(crossings, route);
+    const x = m.cluster.clusterTitleX(c, width, crossings, pad);
+    const other = coord();
+    cases.push({ fn: 'cluster', args: [c, width, routes, pad, other], want: [x, m.cluster.titleCrossed(c, width, x, crossings), m.cluster.titleCrossed(c, width, other, crossings)] });
+  }
+  for (let i = 0; i < 60; i++) {
+    const parents = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, -1];
+    const args = [pick(labelTexts), coord(), coord(), pick(['', ' class="t"']), pick(['id1', 'a&b']), parents, int(0, parents.length - 1)];
+    cases.push(call((t, x, y, attrs, id, ps, index) =>
+      m.cluster.struckTitle(m.label.layoutLabel(t, false, metrics, 14, 200), x, y, attrs, id, ps.map((parent) => ({ parent })), index), 'struckTitle', args));
+  }
+
+  const curves = [null, 'linear', 'step', 'stepBefore', 'stepAfter', 'basis'];
+  for (let i = 0; i < 1500; i++) {
+    const route = [];
+    let x = coord();
+    let y = coord();
+    for (let p = int(2, 6); p > 0; p--) {
+      route.push(x, y, int(0, 1));
+      if (random() < 0.4) x = random() < 0.5 ? x : coord();
+      else x = coord();
+      y = random() < 0.4 ? y : coord();
+    }
+    const startTrim = pick([0, 0, 7, 8, 4]);
+    const endTrim = pick([0, 7, 7, 8, 4]);
+    const reach = random() < 0.5;
+    const args = [route, pick(curves), startTrim, endTrim, reach ? pick([0, 13, 14, 20]) : null, reach ? pick([0, 13, 14, 20]) : null];
+    cases.push(call((r, c, st, et, sr, er) => m.edges.routePath(r, c ?? undefined, st, et, sr ?? undefined, er ?? undefined), 'routePath', args));
+  }
+  for (const typ of ['arrow_point', 'arrow_circle', 'arrow_cross', 'none', '']) {
+    cases.push(call(m.edges.markerTrim, 'markerTrim', [typ]));
+    for (let i = 0; i < 20; i++) {
+      const a = random() * 7;
+      cases.push(call(m.edges.marker, 'marker', [typ, coord(), coord(), Math.cos(a), Math.sin(a), pick(['var(--_l)', 'red'])]));
+    }
+  }
+  for (let i = 0; i < 40; i++) {
+    const args = [pick(['e1', 'a&lt;b']), pick(labelTexts), coord(), coord(), pick(['', ' fill="red"'])];
+    cases.push(call((id, t, x, y, attrs) => m.edges.edgeLabelSvg(id, m.label.layoutLabel(t, false, metrics, 14, 200), x, y, attrs), 'edgeLabelSvg', args));
+  }
+  for (let i = 0; i < 200; i++) {
+    const args = [coord(), coord(), pick([40, 80, 120.5, 10]), pick([30, 44, 61.3, 6]), int(0, 4), random() < 0.5, pick([20, 30]), pick([0, 7, 8]), pick([0, 40.5]), pick([0, 21])];
+    cases.push(call((x, y, w, h, k, sideways, base, trim, labelW, labelH) => {
+      const e = { labelW, labelH, labelX: 0, labelY: 0 };
+      const path = m.edges.loopPath({ x, y }, w, h, k, sideways, base, trim, e);
+      return { path, labelX: e.labelX, labelY: e.labelY };
+    }, 'loopPath', args));
+  }
+  for (let i = 0; i < 50; i++) {
+    const ops = [];
+    for (let n = int(1, 8); n > 0; n--) ops.push([int(0, 3), int(-1, 3), pick(['arrow_point', 'arrow_circle', 'arrow_cross', 'none'])]);
+    const queries = [];
+    for (let n = 0; n < 6; n++) queries.push([int(0, 3), int(-1, 3)]);
+    cases.push(call((adds, qs) => {
+      const reach = m.edges.sideReach();
+      for (const [node, side, typ] of adds) reach.add(node, side, typ);
+      return qs.map(([node, side]) => reach.of(node, side));
+    }, 'sideReach', [ops, queries]));
+  }
+
+  const source = readFileSync(join(peleDir, 'src/svg/shapes.ts'), 'utf8');
+  const names = [...source.matchAll(/^  '?([\w-]+)'?: \{/gm)].map((x) => x[1]);
+  names.push('unknown', 'constructor', '');
+  for (const name of names) {
+    for (const [tw, th] of [[0, 0], [40, 21], [123.4, 42], [7, 63]]) cases.push(call(m.shapes.shapeSize, 'shapeSize', [name, tw, th]));
+    for (const [w, h] of [[100, 40], [44, 44], [181.3, 77.7]]) {
+      cases.push(call(m.shapes.drawShape, 'drawShape', [name, w, h, ' fill="var(--_s)" stroke="var(--_b)"', ' stroke="red"']));
+      for (let side = 0; side < 4; side++) for (const t of [0, 5, -13.3, 100]) cases.push(call(m.shapes.shapeInset, 'shapeInset', [name, w, h, side, t]));
+      cases.push(call(m.shapes.shapeSpan, 'shapeSpan', [name, w, h, false]), call(m.shapes.shapeSpan, 'shapeSpan', [name, w, h, true]));
+    }
+    cases.push(call(m.shapes.shapeHasLabel, 'shapeHasLabel', [name]));
+  }
+  for (let i = 0; i < 400; i++) {
+    const c = { x: pick([0, 50]), y: pick([0, 30]), w: pick([100, 60]), h: pick([40, 80]), isGroup: random() < 0.2 };
+    const route = [c.x + pick([-c.w / 2, c.w / 2, 0, 10, -c.w / 2 + 0.3]), c.y + pick([-c.h / 2, c.h / 2, 0, 5, c.h / 2 - 0.4]), 0];
+    const view = { shape: pick(names), w: c.w - pick([0, 10]), h: c.h - pick([0, 6]) };
+    cases.push(call((r, box, v) => {
+      const side = m.shapes.endSide(r, 0, box);
+      const copy = r.slice();
+      m.shapes.insetRoute(copy, 0, v, box);
+      return [side, copy];
+    }, 'insetRoute', [route, c, view]));
+  }
   return cases;
 });
 

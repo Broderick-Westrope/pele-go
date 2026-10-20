@@ -126,7 +126,8 @@ func call(fn Func, args Args) (got any, threw string, panicked bool) {
 }
 
 // Canon writes a JSON-like value one way, whichever side it came from: numbers as JS
-// writes them (non-finite ones as JSON's null), strings by code unit, object keys sorted.
+// writes them (non-finite ones as JSON's null), strings by code unit, object keys sorted
+// and null fields left out.
 func Canon(v any) string {
 	switch v := v.(type) {
 	case nil:
@@ -163,9 +164,12 @@ func Canon(v any) string {
 		}
 		return "[" + strings.Join(parts, ",") + "]"
 	case map[string]any:
+		// JSON.stringify leaves out undefined fields, which the port's results give as nil.
 		keys := make([]string, 0, len(v))
-		for k := range v {
-			keys = append(keys, k)
+		for k, e := range v {
+			if e != nil {
+				keys = append(keys, k)
+			}
 		}
 		slices.Sort(keys)
 		parts := make([]string, len(keys))

@@ -1,10 +1,12 @@
 package svg
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
+	"github.com/Broderick-Westrope/pele-go/internal/omap"
 )
 
 // RootStyle holds the private aliases set once on the root element, so each use is short
@@ -114,4 +116,216 @@ func FontStyle(size float64, family, mono *string) string {
 	return ";--_fm:var(--pele-font-mono," + families(mono, "monospace") + ");font:" + jsnum.Format(size) + "px sans-serif;" +
 		"letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;" +
 		"font-family:var(--pele-font," + families(family, "sans-serif") + ")"
+}
+
+var shapeProps = map[string]bool{
+	"fill": true, "fill-opacity": true, "stroke": true, "stroke-width": true, "stroke-dasharray": true,
+	"stroke-dashoffset": true, "stroke-linecap": true, "stroke-linejoin": true, "stroke-opacity": true,
+	"opacity": true, "rx": true, "ry": true,
+}
+
+var textProps = map[string]bool{
+	"color": true, "font-size": true, "font-family": true, "font-weight": true, "font-style": true,
+	"text-decoration": true, "letter-spacing": true, "word-spacing": true, "opacity": true,
+}
+
+// hasPrefixFold reports whether s has the lower-case ASCII word at i, as a regex with the
+// i flag and without u matches it: ASCII letters in either case.
+func hasPrefixFold(s string, i int, word string) bool {
+	if i+len(word) > len(s) {
+		return false
+	}
+	for k := 0; k < len(word); k++ {
+		c := s[i+k]
+		if c >= 'A' && c <= 'Z' {
+			c += 'a' - 'A'
+		}
+		if c != word[k] {
+			return false
+		}
+	}
+	return true
+}
+
+// spaceThenParen matches \s*\( at i.
+func spaceThenParen(s string, i int) bool {
+	i = skip(s, i, jsstr.IsSpace)
+	return i < len(s) && s[i] == '('
+}
+
+// isUnsafe is /url\s*\(|expression\s*\(|javascript:|[<>{};\\]|@import|image-set|\/\*/i.
+func isUnsafe(value string) bool {
+	for i := 0; i < len(value); i++ {
+		switch value[i] {
+		case '<', '>', '{', '}', ';', '\\':
+			return true
+		}
+		if hasPrefixFold(value, i, "url") && spaceThenParen(value, i+3) ||
+			hasPrefixFold(value, i, "expression") && spaceThenParen(value, i+10) ||
+			hasPrefixFold(value, i, "javascript:") ||
+			hasPrefixFold(value, i, "@import") ||
+			hasPrefixFold(value, i, "image-set") ||
+			strings.HasPrefix(value[i:], "/*") {
+			return true
+		}
+	}
+	return false
+}
+
+// dropImportant is value.replace(/!important/gi, ”).
+func dropImportant(value string) string {
+	var b strings.Builder
+	last := 0
+	for i := 0; i < len(value); {
+		if hasPrefixFold(value, i, "!important") {
+			b.WriteString(value[last:i])
+			i += len("!important")
+			last = i
+			continue
+		}
+		i++
+	}
+	if last == 0 {
+		return value
+	}
+	return b.String() + value[last:]
+}
+
+// propertyName lower-cases a property for matching against the property lists. Of every
+// character only A-Z and the Kelvin sign lower-case to ASCII in JS; the rest cannot match.
+func propertyName(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			b.WriteRune(r + 'a' - 'A')
+		case r == '\u212a':
+			b.WriteByte('k')
+		case r < 0x80:
+			b.WriteRune(r)
+		default:
+			// Stands for any character that keeps the name from matching.
+			b.WriteByte(0)
+		}
+	}
+	return b.String()
+}
+
+// isPixelSize is /^[\d.]+(px)?$/.
+func isPixelSize(s string) bool {
+	body := strings.TrimSuffix(s, "px")
+	if body == "" {
+		return false
+	}
+	for i := 0; i < len(body); i++ {
+		if c := body[i]; c != '.' && (c < '0' || c > '9') {
+			return false
+		}
+	}
+	return true
+}
+
+// ResolvedStyle is Mermaid style declarations split into what applies to a shape, to the
+// lines of a shape without its fill, and to its text. Stroke is "" and FontSize 0 where
+// upstream's are undefined: neither can otherwise be empty or zero.
+type ResolvedStyle struct {
+	Shape, Line, Text string
+	Stroke            string
+	Bold, Italic      bool
+	FontSize          float64
+}
+
+// ResolveStyle splits Mermaid style declarations into what applies to a shape and what
+// applies to its text.
+func ResolveStyle(declarations []string) ResolvedStyle {
+	if len(declarations) == 0 {
+		return ResolvedStyle{}
+	}
+	var shape, txt omap.Map[string, string]
+	for _, decl := range declarations {
+		at := strings.IndexByte(decl, ':')
+		if at <= 0 {
+			continue
+		}
+		prop := propertyName(jsstr.Trim(decl[:at]))
+		value := jsstr.Trim(dropImportant(decl[at+1:]))
+		if value == "" || isUnsafe(value) {
+			continue
+		}
+		if shapeProps[prop] {
+			shape.Set(prop, value)
+		}
+		if textProps[prop] {
+			if prop == "color" {
+				prop = "fill"
+			}
+			txt.Set(prop, value)
+		}
+	}
+	if shape.Len() == 0 && txt.Len() == 0 {
+		return ResolvedStyle{}
+	}
+	var shapeCSS, lineCSS, textCSS string
+	for prop, value := range shape.All() {
+		shapeCSS += prop + ":" + value + ";"
+		if prop != "fill" && prop != "fill-opacity" {
+			lineCSS += prop + ":" + value + ";"
+		}
+	}
+	for prop, value := range txt.All() {
+		textCSS += prop + ":" + value + ";"
+	}
+	attr := func(css string) string {
+		if css == "" {
+			return ""
+		}
+		return ` style="` + Esc(css) + `"`
+	}
+	weight, hasWeight := txt.Get("font-weight")
+	style, _ := txt.Get("font-style")
+	stroke, _ := shape.Get("stroke")
+	r := ResolvedStyle{
+		Shape:  attr(shapeCSS),
+		Line:   attr(lineCSS),
+		Text:   attr(textCSS),
+		Stroke: stroke,
+		Bold:   weight == "bold" || weight == "bolder" || hasWeight && jsnum.Parse(weight) >= 600,
+		Italic: style == "italic",
+	}
+	if size, ok := txt.Get("font-size"); ok && isPixelSize(size) {
+		if px := jsnum.ParseFloat(size); px > 0 && px <= 200 {
+			r.FontSize = px
+		}
+	}
+	return r
+}
+
+// ClassNames turns a class list as written into one for an attribute, with a leading space,
+// or "" when it has none.
+func ClassNames(raw string) string {
+	var b strings.Builder
+	inRun := false
+	for i := 0; i < len(raw); i++ {
+		c := raw[i]
+		if c == '_' || c == '-' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' {
+			b.WriteByte(c)
+			inRun = false
+		} else if !inRun {
+			b.WriteByte(' ')
+			inRun = true
+		}
+	}
+	cleaned := jsstr.Trim(b.String())
+	if cleaned == "" {
+		return ""
+	}
+	return " " + cleaned
+}
+
+var series = [...]string{"#4c78a8", "#f58518", "#54a24b", "#e45756", "#72b7b2", "#eeca3b", "#b279a2", "#9d755d"}
+
+// SeriesColor is the color for the nth data series in a chart, cycling through eight tokens.
+func SeriesColor(index int) string {
+	k := ((index % 8) + 8) % 8
+	return "var(--pele-series-" + strconv.Itoa(k+1) + "," + series[k] + ")"
 }
