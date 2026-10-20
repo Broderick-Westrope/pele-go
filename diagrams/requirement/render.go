@@ -10,7 +10,6 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
-	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/layout"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/svg"
@@ -225,20 +224,6 @@ func renderRequirement(db *requirementDb, config *jsobj.Object, rc *core.Context
 	return common.TurnToFit(rc.Options, func(down bool) core.Rendered { return draw(db, config, rc, down) })
 }
 
-// stripDefault is s.replace(/^default\s?/, ”).
-func stripDefault(s string) string {
-	if !strings.HasPrefix(s, "default") {
-		return s
-	}
-	s = s[len("default"):]
-	if s != "" {
-		if r, n := jsstr.Decode(s, 0); jsstr.IsSpace(r) {
-			s = s[n:]
-		}
-	}
-	return s
-}
-
 // draw: turned draws a diagram that runs across as one that runs down.
 func draw(db *requirementDb, _ *jsobj.Object, rc *core.Context, turned bool) core.Rendered {
 	options := rc.Options
@@ -418,7 +403,7 @@ func draw(db *requirementDb, _ *jsobj.Object, rc *core.Context, turned bool) cor
 		if view.node.requirement != nil {
 			kind = "pele-requirement"
 		}
-		nodesOut.WriteString(`<g class="pele-node ` + kind + svg.ClassNames(stripDefault(view.node.cssClasses)) +
+		nodesOut.WriteString(`<g class="pele-node ` + kind + svg.ClassNames(svg.StripDefault(view.node.cssClasses)) +
 			`" data-id="` + svg.EscText(view.node.id) + `" transform="translate(` + svg.Num(cnodes[i].X+ox) + `,` +
 			svg.Num(cnodes[i].Y+oy) + `)">` + body + `</g>`)
 	}

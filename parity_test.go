@@ -117,7 +117,16 @@ var infoInputs = []string{
 }
 
 // handInputs are hand-written sources by diagram type, checked with the corpus.
-var handInputs = map[string][]string{"info": infoInputs}
+var handInputs = map[string][]string{
+	"info": infoInputs,
+	"flowchart": {
+		// A group whose only class is default.
+		"flowchart TD\nsubgraph X\nA\nend\nclass X default\nB:::default",
+	},
+	"agentflow": {
+		"agentflow-beta TB\n  flow X[\"x\"]\n    a[\"A\"]\n  end\n  class X default\n",
+	},
+}
 
 // v8Inputs are hand-written sources by diagram type that only V8 can judge.
 var v8Inputs = map[string][]string{"info": loneSurrogateInputs}

@@ -121,3 +121,24 @@ func TestCases(t *testing.T) {
 		},
 	})
 }
+
+func TestStripDefault(t *testing.T) {
+	tests := map[string]struct {
+		in, want string
+	}{
+		"default alone":     {in: "default", want: ""},
+		"default and class": {in: "default a b", want: "a b"},
+		"one space only":    {in: "default  a", want: " a"},
+		"unicode space":     {in: "default\u3000a", want: "a"},
+		"longer word":       {in: "defaults", want: "s"},
+		"not at start":      {in: "a default", want: "a default"},
+		"empty":             {in: "", want: ""},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := svg.StripDefault(tc.in); got != tc.want {
+				t.Errorf("StripDefault(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}

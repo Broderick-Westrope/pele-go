@@ -277,20 +277,6 @@ func renderUsecase(model *usecaseModel, config *jsobj.Object, rc *core.Context) 
 	return common.TurnToFit(rc.Options, func(down bool) core.Rendered { return draw(model, config, rc, down) })
 }
 
-// trimDefault is s.replace(/^default\s?/, ”).
-func trimDefault(s string) string {
-	rest, ok := strings.CutPrefix(s, "default")
-	if !ok {
-		return s
-	}
-	if rest != "" {
-		if r, n := jsstr.Decode(rest, 0); jsstr.IsSpace(r) {
-			rest = rest[n:]
-		}
-	}
-	return rest
-}
-
 // trimRelationship is s.replace(/^default relationship relationship-\S+\s?/, ”).
 func trimRelationship(s string) string {
 	rest, ok := strings.CutPrefix(s, "default relationship relationship-")
@@ -532,7 +518,7 @@ func draw(model *usecaseModel, config *jsobj.Object, rc *core.Context, turned bo
 	for i, v := range views {
 		c := &cnodes[i]
 		node := v.node
-		classes := svg.ClassNames(trimDefault(node.cssClasses))
+		classes := svg.ClassNames(svg.StripDefault(node.cssClasses))
 		id := svg.EscText(node.id)
 		textAttrs := v.style.Text
 		shape := v.style.Shape

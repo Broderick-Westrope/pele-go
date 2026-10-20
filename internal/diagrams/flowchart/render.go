@@ -10,7 +10,6 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
-	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/layout"
 	"github.com/Broderick-Westrope/pele-go/internal/svg"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
@@ -77,18 +76,6 @@ func section(config *jsobj.Object, key string) (*jsobj.Object, bool) {
 	v, _ := config.Get(key)
 	obj, ok := v.(*jsobj.Object)
 	return obj, ok
-}
-
-// stripDefault is s.replace(/^default\s?/, ”).
-func stripDefault(s string) string {
-	if !strings.HasPrefix(s, "default") {
-		return s
-	}
-	s = s[len("default"):]
-	if r, n := jsstr.Decode(s, 0); n > 0 && jsstr.IsSpace(r) {
-		s = s[n:]
-	}
-	return s
 }
 
 var flowchartClasses = strings.NewReplacer("edge-thickness-normal", "", "edge-pattern-solid", "", "flowchart-link", "")
@@ -352,7 +339,7 @@ func draw(db *FlowDb, config *jsobj.Object, rc *core.Context, variant *FlowVaria
 		c := &cnodes[i]
 		node := view.node
 		x, y := c.X, c.Y
-		classes := svg.ClassNames(stripDefault(node.CSSClasses))
+		classes := svg.ClassNames(svg.StripDefault(node.CSSClasses))
 		id := svg.EscText(node.ID)
 		if c.IsGroup && variant != nil && variant.DrawGroup != nil && c.Parent < 0 {
 			clusters.WriteString(variant.DrawGroup(c, view.label, view.style, classes, id, rootDir, icons))

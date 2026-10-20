@@ -10,7 +10,6 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
-	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/layout"
 	"github.com/Broderick-Westrope/pele-go/internal/omap"
 	"github.com/Broderick-Westrope/pele-go/internal/svg"
@@ -140,20 +139,6 @@ func renderEr(db *erDb, config *jsobj.Object, rc *core.Context) core.Rendered {
 		return draw(db, config, rc, false)
 	}
 	return common.TurnToFit(rc.Options, func(down bool) core.Rendered { return draw(db, config, rc, down) })
-}
-
-// stripDefault is s.replace(/^default\s?/, ”).
-func stripDefault(s string) string {
-	if !strings.HasPrefix(s, "default") {
-		return s
-	}
-	s = s[len("default"):]
-	if s != "" {
-		if r, n := jsstr.Decode(s, 0); jsstr.IsSpace(r) {
-			s = s[n:]
-		}
-	}
-	return s
 }
 
 // draw: turned draws a diagram that runs across as one that runs down.
@@ -440,7 +425,7 @@ func draw(db *erDb, config *jsobj.Object, rc *core.Context, turned bool) core.Re
 	for i, view := range views {
 		c := &cnodes[i]
 		node := view.node
-		classes := svg.ClassNames(stripDefault(node.cssClasses))
+		classes := svg.ClassNames(svg.StripDefault(node.cssClasses))
 		if c.IsGroup {
 			view.w = c.W
 			view.h = c.H

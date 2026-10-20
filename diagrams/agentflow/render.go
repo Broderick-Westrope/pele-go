@@ -10,7 +10,6 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/jsmath"
 	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
-	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/layout"
 	"github.com/Broderick-Westrope/pele-go/internal/svg"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
@@ -84,18 +83,6 @@ type nodeView struct {
 	w, h  float64
 	dy    float64
 	loops int
-}
-
-// stripDefault is s.replace(/^default\s?/, ”).
-func stripDefault(s string) string {
-	if !strings.HasPrefix(s, "default") {
-		return s
-	}
-	s = s[len("default"):]
-	if r, n := jsstr.Decode(s, 0); n > 0 && jsstr.IsSpace(r) {
-		s = s[n:]
-	}
-	return s
 }
 
 var flowchartClasses = strings.NewReplacer("edge-thickness-normal", "", "edge-pattern-solid", "", "flowchart-link", "")
@@ -428,7 +415,7 @@ func draw(db *agentflowDb, config *jsobj.Object, rc *core.Context, turned bool) 
 		c := &cnodes[i]
 		node := view.node
 		x, y := c.X, c.Y
-		classes := svg.ClassNames(stripDefault(node.cssClasses))
+		classes := svg.ClassNames(svg.StripDefault(node.cssClasses))
 		id := svg.EscText(node.id)
 		colorIndex := node.colorIndex
 		if colorIndex < 0 {

@@ -91,21 +91,6 @@ func memberLine(member *classMember, measurer text.Measurer, size float64) line 
 	return line{text: t, width: measurer.Width(t, size, style), classifier: member.classifier}
 }
 
-// trimDefault is s.replace(/^default\s?/, ”).
-func trimDefault(s string) string {
-	rest, ok := strings.CutPrefix(s, "default")
-	if !ok {
-		return s
-	}
-	if rest == "" {
-		return rest
-	}
-	if r, n := jsstr.Decode(rest, 0); jsstr.IsSpace(r) {
-		rest = rest[n:]
-	}
-	return rest
-}
-
 func renderClass(db *classDb, config *jsobj.Object, rc *core.Context) core.Rendered {
 	options := rc.Options
 	fitted := func(down bool) core.Rendered {
@@ -767,7 +752,7 @@ func draw(db *classDb, config *jsobj.Object, rc *core.Context, turned, tight boo
 			}
 			body = util.Linked(body, cls.link, cls.id, &links, options, target)
 		}
-		return `<g class="pele-node pele-class` + svg.ClassNames(trimDefault(cls.cssClasses)) + `" data-id="` + id + `"` + at + `>` + body + `</g>`
+		return `<g class="pele-node pele-class` + svg.ClassNames(svg.StripDefault(cls.cssClasses)) + `" data-id="` + id + `"` + at + `>` + body + `</g>`
 	}
 
 	var clusters, struckTitles, nodesOut strings.Builder

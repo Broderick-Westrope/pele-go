@@ -300,6 +300,22 @@ func ResolveStyle(declarations []string) ResolvedStyle {
 	return r
 }
 
+// StripDefault is s.replace(/^default\s?/, ”): a class list without the default class every
+// node starts with.
+func StripDefault(s string) string {
+	rest, ok := strings.CutPrefix(s, "default")
+	if !ok {
+		return s
+	}
+	if rest == "" {
+		return rest
+	}
+	if r, n := jsstr.Decode(rest, 0); jsstr.IsSpace(r) {
+		rest = rest[n:]
+	}
+	return rest
+}
+
 // ClassNames turns a class list as written into one for an attribute, with a leading space,
 // or "" when it has none.
 func ClassNames(raw string) string {
