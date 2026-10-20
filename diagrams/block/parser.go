@@ -15,9 +15,9 @@ type nodeInfo struct {
 // A statement list is kept flat: upstream's lists of statements, where a link statement is a
 // nested list, are only ever read flattened.
 type openFrame struct {
-	list []*Block
+	list []*blockNode
 	// header is the block statement that opened the composite, nil for a bare `block`.
-	header *Block
+	header *blockNode
 	// chained is set when the header was a link statement, which leaves the composite
 	// none of its fields.
 	chained bool
@@ -69,15 +69,15 @@ func parseBlock(source string, db *blockDb) {
 		return nodeInfo{id: id}
 	}
 
-	newBlock := func(info nodeInfo) *Block {
-		return &Block{
+	newBlock := func(info nodeInfo) *blockNode {
+		return &blockNode{
 			id: info.id, hasID: true, label: info.label, typ: typeStr2Type(info.typeStr), directions: info.directions,
 			columns: -1, widthInColumns: 1, colorIndex: -1,
 		}
 	}
 
 	// nodeStatement returns the statement's blocks, and whether it was a link statement.
-	nodeStatement := func() ([]*Block, bool) {
+	nodeStatement := func() ([]*blockNode, bool) {
 		first := node()
 		size := 1.0
 		if types[i] == tSize {
@@ -86,7 +86,7 @@ func parseBlock(source string, db *blockDb) {
 		}
 		from := newBlock(first)
 		from.widthInColumns = size
-		var chain []*Block
+		var chain []*blockNode
 		for types[i] == tLink || types[i] == tStartLink {
 			label := ""
 			i++
@@ -105,11 +105,11 @@ func parseBlock(source string, db *blockDb) {
 			if chain == nil {
 				head := newBlock(first)
 				head.typ = from.typ
-				chain = []*Block{head}
+				chain = []*blockNode{head}
 			}
 			from = newBlock(to)
 			prev := chain[len(chain)-1].id
-			chain = append(chain, &Block{
+			chain = append(chain, &blockNode{
 				id: prev + "-" + to.id, hasID: true, start: prev, end: to.id, label: label, typ: "edge",
 				thickness: thickness, pattern: pattern, directions: to.directions,
 				arrowTypeEnd: arrowTypeEnd, arrowTypeStart: arrowTypeStart,
@@ -119,25 +119,25 @@ func parseBlock(source string, db *blockDb) {
 		if chain != nil {
 			return chain, true
 		}
-		return []*Block{from}, false
+		return []*blockNode{from}, false
 	}
 
 	expect(tKey)
 	// Composites nest without recursion: each open one keeps the statement list of its parent.
 	var open []openFrame
-	var list []*Block
+	var list []*blockNode
 	for {
 		switch types[i] {
 		case tNodeID:
 			blocks, _ := nodeStatement()
 			list = append(list, blocks...)
 		case tColumns:
-			list = append(list, &Block{typ: "column-setting", columns: jsnum.Parse(texts[i]), widthInColumns: 1, colorIndex: -1})
+			list = append(list, &blockNode{typ: "column-setting", columns: jsnum.Parse(texts[i]), widthInColumns: 1, colorIndex: -1})
 			i++
 		case tSpaceBlock:
 			width := jsnum.Parse(texts[i])
 			i++
-			list = append(list, &Block{id: db.generateId(), hasID: true, typ: "space", width: width, columns: -1, widthInColumns: 1, colorIndex: -1})
+			list = append(list, &blockNode{id: db.generateId(), hasID: true, typ: "space", width: width, columns: -1, widthInColumns: 1, colorIndex: -1})
 		case tKey:
 			i++
 			open = append(open, openFrame{list: list})
@@ -162,9 +162,9 @@ func parseBlock(source string, db *blockDb) {
 			list = f.list
 			switch {
 			case f.header == nil:
-				list = append(list, &Block{id: id, hasID: true, typ: "composite", children: children, columns: -1, widthInColumns: 1, colorIndex: -1})
+				list = append(list, &blockNode{id: id, hasID: true, typ: "composite", children: children, columns: -1, widthInColumns: 1, colorIndex: -1})
 			case f.chained:
-				list = append(list, &Block{typ: "composite", children: children, columns: -1, colorIndex: -1, widthInColumns: 1})
+				list = append(list, &blockNode{typ: "composite", children: children, columns: -1, colorIndex: -1, widthInColumns: 1})
 			default:
 				composite := *f.header
 				composite.typ = "composite"
@@ -174,15 +174,15 @@ func parseBlock(source string, db *blockDb) {
 		case tClassDef:
 			i++
 			id := jsstr.Trim(expect(tClassDefID))
-			list = append(list, &Block{typ: "classDef", id: id, hasID: true, css: jsstr.Trim(expect(tClassDefStyleOpts)), columns: -1, widthInColumns: 1, colorIndex: -1})
+			list = append(list, &blockNode{typ: "classDef", id: id, hasID: true, css: jsstr.Trim(expect(tClassDefStyleOpts)), columns: -1, widthInColumns: 1, colorIndex: -1})
 		case tClass:
 			i++
 			id := jsstr.Trim(expect(tClassEntityIDs))
-			list = append(list, &Block{typ: "applyClass", id: id, hasID: true, styleClass: jsstr.Trim(expect(tStyleClass)), columns: -1, widthInColumns: 1, colorIndex: -1})
+			list = append(list, &blockNode{typ: "applyClass", id: id, hasID: true, styleClass: jsstr.Trim(expect(tStyleClass)), columns: -1, widthInColumns: 1, colorIndex: -1})
 		case tStyle:
 			i++
 			id := jsstr.Trim(expect(tStyleEntityIDs))
-			list = append(list, &Block{typ: "applyStyles", id: id, hasID: true, stylesStr: jsstr.Trim(expect(tStyleDefinitionData)), columns: -1, widthInColumns: 1, colorIndex: -1})
+			list = append(list, &blockNode{typ: "applyStyles", id: id, hasID: true, stylesStr: jsstr.Trim(expect(tStyleDefinitionData)), columns: -1, widthInColumns: 1, colorIndex: -1})
 		case tEOF:
 			if len(open) > 0 {
 				fail(statementStart + ", 'end'")

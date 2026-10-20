@@ -147,7 +147,7 @@ func isTextToken(t int) bool {
 
 func (p *parser) text() *flowText {
 	t := p.kind()
-	var typ LabelType
+	var typ labelKind
 	switch {
 	case t == tStr:
 		typ = "string"
@@ -170,7 +170,7 @@ func (p *parser) closed(typ int) {
 }
 
 func (p *parser) edgeText() *flowText {
-	var typ LabelType
+	var typ labelKind
 	switch p.kind() {
 	case tStr:
 		typ = "string"
@@ -190,7 +190,7 @@ func (p *parser) edgeText() *flowText {
 
 func (p *parser) textNoTags() *flowText {
 	t := p.kind()
-	var typ LabelType
+	var typ labelKind
 	switch {
 	case t == tStr:
 		typ = "text"

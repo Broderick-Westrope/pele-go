@@ -97,14 +97,14 @@ func edgeStrToPattern(typeStr string) string {
 }
 
 type frame struct {
-	list     []*Block
+	list     []*blockNode
 	at       int
-	parent   *Block
-	children []*Block
+	parent   *blockNode
+	children []*blockNode
 	columns  float64
 }
 
-func newFrame(list []*Block, parent *Block) *frame {
+func newFrame(list []*blockNode, parent *blockNode) *frame {
 	columns := -1.0
 	for _, block := range list {
 		if block.typ == "column-setting" {
@@ -118,13 +118,13 @@ func newFrame(list []*Block, parent *Block) *frame {
 // blockDb is upstream's BlockDb, without its warn option: index.ts gives none.
 type blockDb struct {
 	title  *string
-	root   *Block
-	blocks []*Block
-	edges  []*Block
+	root   *blockNode
+	blocks []*blockNode
+	edges  []*blockNode
 	// classes is only read by id.
 	classes map[string]*blockClassDef
 	// Mermaid keeps the root in here too, which makes a block called `root` vanish. Here it stays out.
-	byId omap.Map[string, *Block]
+	byId omap.Map[string, *blockNode]
 
 	// Ids that a class or style statement named before any block had them.
 	pending   omap.Set[string]
@@ -136,7 +136,7 @@ type blockDb struct {
 
 func newBlockDb() *blockDb {
 	return &blockDb{
-		root:      &Block{id: "root", hasID: true, typ: "composite", columns: -1, widthInColumns: 1, colorIndex: -1},
+		root:      &blockNode{id: "root", hasID: true, typ: "composite", columns: -1, widthInColumns: 1, colorIndex: -1},
 		classes:   map[string]*blockClassDef{},
 		edgeCount: map[string]int{},
 	}
@@ -181,17 +181,17 @@ func (db *blockDb) setCssClass(itemIds, cssClassName string) {
 
 // Mermaid throws on a style for an unknown id, and a class for one makes the block of that id
 // disappear when it is declared later. Here both wait for the block.
-func (db *blockDb) named(id string) *Block {
+func (db *blockDb) named(id string) *blockNode {
 	b, ok := db.byId.Get(id)
 	if !ok {
-		b = &Block{id: id, hasID: true, typ: "na", columns: -1, widthInColumns: 1, colorIndex: -1}
+		b = &blockNode{id: id, hasID: true, typ: "na", columns: -1, widthInColumns: 1, colorIndex: -1}
 		db.byId.Set(id, b)
 		db.pending.Add(id)
 	}
 	return b
 }
 
-func (db *blockDb) setHierarchy(statements []*Block) {
+func (db *blockDb) setHierarchy(statements []*blockNode) {
 	stack := []*frame{newFrame(statements, db.root)}
 	for len(stack) > 0 {
 		f := stack[len(stack)-1]

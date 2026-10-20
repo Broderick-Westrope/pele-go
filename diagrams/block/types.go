@@ -1,16 +1,16 @@
 package block
 
-// Block is one shape for blocks, edges, and the statements that set columns, classes, and
-// styles, as in Mermaid. Where upstream's field can be undefined, the zero value or the
-// default upstream reads it with (`?? -1`, `?? 1`) stands for it.
-type Block struct {
+// blockNode is upstream's Block: one shape for blocks, edges, and the statements that set
+// columns, classes, and styles, as in Mermaid. Where upstream's field can be undefined, the
+// zero value or the default upstream reads it with (`?? -1`, `?? 1`) stands for it.
+type blockNode struct {
 	id string
 	// hasID is false only for a composite whose header was a link statement.
 	hasID bool
 	typ   string
 	label string
 	// children is nil where upstream's is undefined or empty: every use treats the two alike.
-	children []*Block
+	children []*blockNode
 	// columns is the grid width, -1 when unset.
 	columns float64
 	// widthInColumns is 1 when unset.

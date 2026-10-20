@@ -2,13 +2,14 @@ package agentflow
 
 import "github.com/Broderick-Westrope/pele-go/internal/jsobj"
 
-// LabelType is how a label is written: "text", "string" or "markdown".
-type LabelType string
+// labelKind is upstream's LabelType, how a label is written: "text", "string" or
+// "markdown".
+type labelKind string
 
 // flowText is a label as written.
 type flowText struct {
 	text string
-	typ  LabelType
+	typ  labelKind
 }
 
 // loc is a source span as Jison reports it: lines start at 1, columns at 0.
@@ -21,7 +22,7 @@ type loc struct {
 type agentNode struct {
 	id          string
 	text        string
-	labelType   LabelType
+	labelType   labelKind
 	typ         string
 	styles      []string
 	classes     []string
@@ -39,7 +40,7 @@ type agentEdge struct {
 	end             string
 	typ             string
 	text            string
-	labelType       LabelType
+	labelType       labelKind
 	stroke          string
 	edgeSemantic    string
 	length          float64
@@ -67,7 +68,7 @@ type agentSubgraph struct {
 	title     string
 	classes   []string
 	dir       string
-	labelType LabelType
+	labelType labelKind
 	metadata  *jsobj.Object
 }
 

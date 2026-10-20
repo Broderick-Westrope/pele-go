@@ -61,7 +61,7 @@ const (
 
 type view struct {
 	cell
-	block *Block
+	block *blockNode
 	kind  kind
 	index int
 	shape string
@@ -76,7 +76,7 @@ type view struct {
 }
 
 type route struct {
-	edge *Block
+	edge *blockNode
 	// points holds two points for a straight line, three for a bend, none for a self-loop.
 	points []float64
 	loop   int
@@ -464,7 +464,7 @@ func draw(model *blockDb, config *jsobj.Object, rc *core.Context, tight bool) co
 		wrap = 80
 	}
 
-	styleOf := func(block *Block) svg.ResolvedStyle {
+	styleOf := func(block *blockNode) svg.ResolvedStyle {
 		var declarations []string
 		// A style list is split on commas only, so one entry can still hold several declarations.
 		add := func(styles []string) {
@@ -485,7 +485,7 @@ func draw(model *blockDb, config *jsobj.Object, rc *core.Context, tight bool) co
 		return svg.ResolveStyle(declarations)
 	}
 
-	newView := func(block *Block, index int) *view {
+	newView := func(block *blockNode, index int) *view {
 		typ := block.typ
 		var style svg.ResolvedStyle
 		if typ != "space" {
@@ -620,7 +620,7 @@ func draw(model *blockDb, config *jsobj.Object, rc *core.Context, tight bool) co
 	pairs := map[int]int{}
 	labelled := map[int]bool{}
 	var ends [][2]*view
-	var drawn []*Block
+	var drawn []*blockNode
 	for _, edge := range model.edges {
 		s, okS := byId[edge.start]
 		t, okT := byId[edge.end]

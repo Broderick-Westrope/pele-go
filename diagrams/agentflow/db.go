@@ -35,10 +35,10 @@ func isToolDefinition(vertex *agentNode) bool {
 	return toolShapes[vertex.typ]
 }
 
-func labelType(typ any) LabelType {
+func labelType(typ any) labelKind {
 	switch typ {
 	case "markdown", "string", "text":
-		return LabelType(typ.(string))
+		return labelKind(typ.(string))
 	}
 	return "markdown"
 }

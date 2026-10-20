@@ -13,7 +13,7 @@ import (
 type graphNode struct {
 	id                string
 	label             string
-	labelType         LabelType
+	labelType         labelKind
 	shape             string
 	isGroup           bool
 	parentID          string
@@ -41,7 +41,7 @@ type graphEdge struct {
 	end               string
 	typ               string
 	label             string
-	labelType         LabelType
+	labelType         labelKind
 	thickness         string
 	pattern           string
 	minlen            float64
