@@ -1,0 +1,182 @@
+// Package jsstr gives Go strings the behaviour of JavaScript strings where the two differ.
+//
+// Strings inside the port are WTF-8: UTF-8 that can also hold a lone surrogate, encoded as
+// the three bytes UTF-8 would use for its code point. JavaScript strings are UTF-16 and can
+// hold lone surrogates, so this keeps every JS string representable and makes conversions in
+// both directions lossless.
+package jsstr
+
+import (
+	"strings"
+	"unicode/utf16"
+	"unicode/utf8"
+)
+
+// Decode returns the code point that starts at s[i] and its length in bytes. A WTF-8 lone
+// surrogate decodes to its surrogate code point. An invalid byte decodes to U+FFFD with
+// length 1.
+func Decode(s string, i int) (rune, int) {
+	c := s[i]
+	if c < utf8.RuneSelf {
+		return rune(c), 1
+	}
+	if c == 0xed && i+2 < len(s) && s[i+1] >= 0xa0 && s[i+1] <= 0xbf && s[i+2]&0xc0 == 0x80 {
+		return 0xd000 | rune(s[i+1]&0x3f)<<6 | rune(s[i+2]&0x3f), 3
+	}
+	return utf8.DecodeRuneInString(s[i:])
+}
+
+// DecodeLast returns the code point that ends at s[:end] and its length in bytes, as Decode
+// would read it.
+func DecodeLast(s string, end int) (rune, int) {
+	start := end - 1
+	for start > 0 && end-start < utf8.UTFMax && !utf8.RuneStart(s[start]) {
+		start--
+	}
+	if r, n := Decode(s, start); start+n == end {
+		return r, n
+	}
+	return utf8.RuneError, 1
+}
+
+func isSurrogate(r rune) bool { return r >= 0xd800 && r <= 0xdfff }
+
+// UTF16 returns the UTF-16 code units of s.
+func UTF16(s string) []uint16 {
+	units := make([]uint16, 0, len(s))
+	for i := 0; i < len(s); {
+		r, n := Decode(s, i)
+		i += n
+		if r >= 0x10000 {
+			hi, lo := utf16.EncodeRune(r)
+			units = append(units, uint16(hi), uint16(lo))
+		} else {
+			units = append(units, uint16(r))
+		}
+	}
+	return units
+}
+
+// FromUTF16 returns the WTF-8 string for UTF-16 code units, pairing surrogates where they
+// form a pair and keeping lone ones.
+func FromUTF16(units []uint16) string {
+	var b strings.Builder
+	b.Grow(len(units))
+	for i := 0; i < len(units); i++ {
+		r := rune(units[i])
+		if r >= 0xd800 && r < 0xdc00 && i+1 < len(units) {
+			if pair := utf16.DecodeRune(r, rune(units[i+1])); pair != utf8.RuneError {
+				b.WriteRune(pair)
+				i++
+				continue
+			}
+		}
+		writeRune(&b, r)
+	}
+	return b.String()
+}
+
+func writeRune(b *strings.Builder, r rune) {
+	if isSurrogate(r) {
+		b.WriteByte(0xe0 | byte(r>>12))
+		b.WriteByte(0x80 | byte(r>>6)&0x3f)
+		b.WriteByte(0x80 | byte(r)&0x3f)
+		return
+	}
+	b.WriteRune(r)
+}
+
+// Normalize returns s with every invalid byte turned into U+FFFD, as converting s to a JS
+// string does. Lone surrogates already in WTF-8 are kept.
+func Normalize(s string) string {
+	for i := 0; i < len(s); {
+		r, n := Decode(s, i)
+		if r == utf8.RuneError && n == 1 {
+			return FromUTF16(UTF16(s))
+		}
+		i += n
+	}
+	return s
+}
+
+// Len returns s.length: the number of UTF-16 code units in s.
+func Len(s string) int {
+	n := 0
+	for i := 0; i < len(s); {
+		r, size := Decode(s, i)
+		i += size
+		n++
+		if r >= 0x10000 {
+			n++
+		}
+	}
+	return n
+}
+
+// WellFormed returns s with each lone surrogate replaced by U+FFFD, as encoding a JS string
+// as UTF-8 does.
+func WellFormed(s string) string {
+	for i := 0; i < len(s); {
+		r, n := Decode(s, i)
+		if isSurrogate(r) {
+			var b strings.Builder
+			b.Grow(len(s))
+			b.WriteString(s[:i])
+			for ; i < len(s); i += n {
+				r, n = Decode(s, i)
+				if isSurrogate(r) {
+					r = utf8.RuneError
+				}
+				b.WriteRune(r)
+			}
+			return b.String()
+		}
+		i += n
+	}
+	return s
+}
+
+// IsSpace reports whether r is whitespace to JavaScript: what \s matches and trim removes.
+func IsSpace(r rune) bool {
+	if r < 128 {
+		return r == ' ' || (r >= '\t' && r <= '\r')
+	}
+	return r == 0xa0 || r == 0x1680 || (r >= 0x2000 && r <= 0x200a) || r == 0x2028 || r == 0x2029 ||
+		r == 0x202f || r == 0x205f || r == 0x3000 || r == 0xfeff
+}
+
+// IsLineEnd reports whether r ends a line to JavaScript: what . does not match.
+func IsLineEnd(r rune) bool {
+	return r == '\n' || r == '\r' || r == 0x2028 || r == 0x2029
+}
+
+// TrimStart returns s without leading JS whitespace.
+func TrimStart(s string) string {
+	i := 0
+	for i < len(s) {
+		r, n := Decode(s, i)
+		if !IsSpace(r) {
+			break
+		}
+		i += n
+	}
+	return s[i:]
+}
+
+// TrimEnd returns s without trailing JS whitespace.
+func TrimEnd(s string) string {
+	end := len(s)
+	for end > 0 {
+		r, n := DecodeLast(s, end)
+		if !IsSpace(r) {
+			break
+		}
+		end -= n
+	}
+	return s[:end]
+}
+
+// Trim returns s without leading or trailing JS whitespace.
+func Trim(s string) string {
+	return TrimEnd(TrimStart(s))
+}
