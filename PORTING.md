@@ -39,6 +39,7 @@ Use the helpers; never approximate with Go's standard behaviour.
 | `String(n)`, template `${n}` | `jsnum.Format` |
 | `Number(s)`, `parseFloat`-like reads | `jsnum.Parse` (write a helper next to it for `parseFloat`/`parseInt` semantics if needed, with a test against goja/V8) |
 | `Math.round` | `jsmath.Round` (Go's `math.Round` differs on .5 and -0) |
+| `Math.sin`, `Math.cos`, `Math.hypot` | `jsmath.Sin`, `jsmath.Cos`, `jsmath.Hypot` (Go's differ in the last bit). Other fdlibm functions (`atan2`, `acos`, `asin`, `pow`, `log10`, `log2`, `exp`) need the same: port V8's `src/base/ieee754.cc` with clang's contraction as `math.FMA`, checked against Node as `internal/jsmath/v8_test.go` does |
 | `num()` coordinate formatting | `svg.Num` |
 | `s.length`, `s.slice`, `charCodeAt` | `jsstr.Len`, `jsstr.Slice`, or work on `[]uint16` (`jsstr.UTF16`) in lexers |
 | `trim`/`trimStart`/`trimEnd`, `\s` | `jsstr.Trim*`, `jsstr.IsSpace` (JS whitespace, not Go's) |
@@ -61,7 +62,9 @@ comment. Think about backtracking: greedy optional groups are tried first (see
 `common.Yaml`), `\s*` before an alternative can back off, `$`/`^` with and without `m`.
 
 **Numbers:** keep float64 everywhere upstream has a number, and keep the order of float
-operations exactly (`a * b / c` is not `a * (b / c)`). `Math.max/min` with NaN or -0 match
+operations exactly (`a * b / c` is not `a * (b / c)`). Go may fuse a product into a sum, even
+across statements and for `x/2`, into one FMA instruction on arm64, which rounds once where JS
+rounds twice: write `float64(a*b) + c` (`TestNoFusedMultiplyAdd` finds the places). `Math.max/min` with NaN or -0 match
 Go's `max`/`min` builtins; check other Math functions before relying on them. Integer
 division and `| 0` / `>>` truncate to int32 in JS.
 

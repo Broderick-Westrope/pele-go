@@ -96,8 +96,8 @@ func renderInfo(m model, rc *core.Context) core.Rendered {
 
 	width := math.Ceil(max(title.Width, version.Width) + 2*pad)
 	height := math.Ceil(titleHeight + version.Height + 2*pad)
-	content := svg.LabelSVG(title, width/2, pad+title.Height/2, ` class="pele-title" font-weight="var(--_tw)"`, nil) +
-		svg.LabelSVG(version, width/2, pad+titleHeight+version.Height/2, ` class="pele-version" fill="var(--_m)"`, nil)
+	content := svg.LabelSVG(title, width/2, pad+float64(title.Height/2), ` class="pele-title" font-weight="var(--_tw)"`, nil) +
+		svg.LabelSVG(version, width/2, pad+titleHeight+float64(version.Height/2), ` class="pele-version" fill="var(--_m)"`, nil)
 
 	doc := svg.Document("info", width, height, size, svg.DocumentOptions{
 		IDPrefix:       opts.IDPrefix,

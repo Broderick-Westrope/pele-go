@@ -388,7 +388,7 @@ func wrap(line []Span, m Measurer, size, maxWidth float64, out *[][]Span, widths
 	}
 	for _, span := range line {
 		if span.Icon != "" {
-			w := size * 1.25
+			w := float64(size * 1.25)
 			if width > 0 && width+w > maxWidth {
 				commit()
 			}

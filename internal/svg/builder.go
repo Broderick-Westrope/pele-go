@@ -77,12 +77,12 @@ func Num(value float64) string {
 	if n > 0 {
 		if n < 1e11 {
 			q := math.Floor(n / 100)
-			return jsnum.Format(q) + fraction[int(n-q*100)]
+			return jsnum.Format(q) + fraction[int(n-float64(q*100))]
 		}
 	} else if n > -1e11 {
 		m := -n
 		q := math.Floor(m / 100)
-		return "-" + jsnum.Format(q) + fraction[int(m-q*100)]
+		return "-" + jsnum.Format(q) + fraction[int(m-float64(q*100))]
 	}
 	return jsnum.Format(n / 100)
 }
@@ -143,8 +143,8 @@ func LabelSVG(label text.Label, cx, cy float64, attrs string, icons *text.Icons)
 		return ""
 	}
 	lh := label.LineHeight
-	shift := label.Size * 0.35
-	y := cy - label.Height/2 + lh/2 + shift
+	shift := float64(label.Size * 0.35)
+	y := cy - float64(label.Height/2) + float64(lh/2) + shift
 
 	if len(lines) == 1 && len(lines[0]) == 1 && lines[0][0].Icon == "" && lines[0][0].Style == 0 {
 		return `<text` + attrs + ` x="` + Num(cx) + `" y="` + Num(y) + `" text-anchor="middle">` + Esc(lines[0][0].Text) + `</text>`
@@ -161,12 +161,12 @@ func LabelSVG(label text.Label, cx, cy float64, attrs string, icons *text.Icons)
 			}
 		}
 		if hasIcon {
-			x := cx - label.Widths[i]/2
+			x := cx - float64(label.Widths[i]/2)
 			for _, span := range line {
 				if span.Icon != "" {
-					side := label.Size * 1.1
+					side := float64(label.Size * 1.1)
 					inner := icons.Resolve(span.Icon)
-					extra.WriteString(`<svg class="pele-icon" data-icon="` + EscText(span.Icon) + `" x="` + Num(x) + `" y="` + Num(y-shift-side/2) +
+					extra.WriteString(`<svg class="pele-icon" data-icon="` + EscText(span.Icon) + `" x="` + Num(x) + `" y="` + Num(y-shift-float64(side/2)) +
 						`" width="` + Num(side) + `" height="` + Num(side) +
 						`" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
 						inner + `</svg>`)
