@@ -231,7 +231,8 @@ func DetectType(source string) (DiagramType, bool) {
 	return DiagramType(typ), ok
 }
 
-// Supports reports whether source is of a registered diagram type.
+// Supports reports whether source is of a registered diagram type. Unlike Render, it does
+// not stop Register from being called afterwards.
 func Supports(source string) bool {
 	return core.Supports(source)
 }

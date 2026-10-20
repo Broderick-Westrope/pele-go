@@ -44,7 +44,8 @@ func init() { pele.Register(flowchart.Diagram) }
 ```
 
 `Register` must run before the first `Render`, normally from `init`; it panics afterwards.
-`DetectType` and `Supports` tell you a source's type without rendering it.
+`DetectType` and `Supports` tell you a source's type without rendering it, and don't count
+as a render for `Register`.
 
 ### Options
 

@@ -157,9 +157,12 @@ func lookup(typ string) (*Diagram, bool) {
 	return d, ok
 }
 
-// Registered reports whether a diagram type is available.
+// Registered reports whether a diagram type is available. Unlike a render, it does not seal
+// the registry.
 func Registered(typ string) bool {
-	_, ok := lookup(typ)
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	_, ok := registry[typ]
 	return ok
 }
 
