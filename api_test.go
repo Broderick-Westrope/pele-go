@@ -109,3 +109,12 @@ func TestVennRenderStopsOnCanceledContext(t *testing.T) {
 		t.Fatalf("context checked %d times, want the renderer's first check to stop it", ctx.calls)
 	}
 }
+
+func TestPtrPointsToACopy(t *testing.T) {
+	v := 12.5
+	p := pele.Ptr(v)
+	*p = 1
+	if v != 12.5 {
+		t.Fatalf("writing through Ptr(v) changed v to %v", v)
+	}
+}
