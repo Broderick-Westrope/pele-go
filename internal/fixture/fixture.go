@@ -39,6 +39,15 @@ func (a Args) Nums(i int) []float64 {
 	return out
 }
 
+// AllNums returns every argument as a number.
+func (a Args) AllNums() []float64 {
+	out := make([]float64, len(a))
+	for k, v := range a {
+		out[k], _ = v.(float64)
+	}
+	return out
+}
+
 // Strs returns argument i, an array of strings.
 func (a Args) Strs(i int) []string {
 	list, _ := a[i].([]any)

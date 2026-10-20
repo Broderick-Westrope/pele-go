@@ -24,3 +24,40 @@ func Round(v float64) float64 {
 	}
 	return t
 }
+
+// Hypot is Math.hypot as V8 computes it (builtins/math.tq): each value over the largest,
+// squared and summed with Kahan compensation. Go's math.Hypot rounds differently.
+func Hypot(values ...float64) float64 {
+	if len(values) == 0 {
+		return 0
+	}
+	largest := 0.0
+	nan := false
+	for _, v := range values {
+		if math.IsNaN(v) {
+			nan = true
+		} else if a := math.Abs(v); a > largest {
+			largest = a
+		}
+	}
+	switch {
+	case math.IsInf(largest, 1):
+		return largest
+	case nan:
+		return math.NaN()
+	case largest == 0:
+		return 0
+	}
+	sum, compensation := 0.0, 0.0
+	for _, v := range values {
+		if math.IsNaN(v) {
+			continue
+		}
+		n := math.Abs(v) / largest
+		summand := float64(n*n) - compensation
+		preliminary := sum + summand
+		compensation = (preliminary - sum) - summand
+		sum = preliminary
+	}
+	return float64(math.Sqrt(sum) * largest)
+}

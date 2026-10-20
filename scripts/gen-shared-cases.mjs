@@ -112,6 +112,24 @@ section('util', () => {
   return cases;
 });
 
+section('jsmath', () => {
+  const cases = [];
+  const args = [0, -0, 1, -1, Math.PI, Math.PI / 2, -Math.PI / 4, 1e-9, 1e300, -1e22, 2 ** 19 * Math.PI];
+  for (let i = 0; i < 28; i++) args.push((Math.PI * i) / 14 - Math.PI / 2);
+  for (let i = 0; i < 2500; i++) args.push((random() - 0.5) * 2 ** (Math.floor(random() * 90) - 30));
+  for (let i = 0; i < 300; i++) args.push((random() - 0.5) * 2 ** (Math.floor(random() * 2000) - 1000));
+  for (let i = 1; i < 100; i++) args.push((i * Math.PI) / 4);
+  for (const x of args) cases.push(call(Math.sin, 'sin', [x]), call(Math.cos, 'cos', [x]));
+  for (let i = 0; i < 1000; i++) {
+    const n = Math.floor(random() * 4);
+    const xs = [];
+    for (let k = 0; k < n; k++) xs.push((random() - 0.5) * 2 ** (Math.floor(random() * 60) - 30));
+    cases.push(call(Math.hypot, 'hypot', xs));
+  }
+  cases.push(call(Math.hypot, 'hypot', [3, 4]), call(Math.hypot, 'hypot', [1e200, 1e200]), call(Math.hypot, 'hypot', [0, -0]));
+  return cases;
+});
+
 for (const [name, build] of Object.entries(sections)) {
   const target = { util: 'internal/util', svg: 'internal/svg', common: 'internal/diagrams/common', jsmath: 'internal/jsmath' }[name];
   write(`${target}/testdata/cases.json`, build());
