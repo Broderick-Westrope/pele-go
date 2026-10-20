@@ -36,3 +36,35 @@ func TestFormatMatchesJS(t *testing.T) {
 		}
 	}
 }
+
+func TestParseMatchesJS(t *testing.T) {
+	vm := goja.New()
+	number, ok := goja.AssertFunction(vm.Get("Number"))
+	if !ok {
+		t.Fatal("Number is not a function")
+	}
+	inputs := []string{
+		"", " ", "0", "-0", "12", " 12 ", "\u00a012\u3000", "+12", "-12.5", ".5", "5.", ".", "1e3", "1E+3", "1e-3",
+		"1e", "e3", "0x1F", "0X1f", "0x", "-0x1F", "0o17", "0b101", "0b2", "Infinity", "-Infinity", "+Infinity",
+		"infinity", "inf", "NaN", "1_000", "0x1_0", "12px", "1.2.3", "00012", "0012.5", "1e400", "-1e400", "1e-400",
+		"123456789012345678901234567890", "0.1e1", "\t\n42\r", "4 2",
+	}
+	for _, in := range inputs {
+		want, err := number(goja.Undefined(), vm.ToValue(in))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := jsnum.Parse(in)
+		w := want.ToFloat()
+		if !(got == w && math.Signbit(got) == math.Signbit(w)) && !(math.IsNaN(got) && math.IsNaN(w)) {
+			t.Errorf("Parse(%q) = %v, want %v", in, got, w)
+		}
+	}
+}
+
+// goja returns NaN for hex integers past 2^64; V8 rounds them, as the spec says.
+func TestParseRoundsLargeHexLikeV8(t *testing.T) {
+	if got, want := jsnum.Parse("0xFFFFFFFFFFFFFFFFFFFF"), 1.2089258196146292e+24; got != want {
+		t.Fatalf("Parse = %v, want %v", got, want)
+	}
+}
