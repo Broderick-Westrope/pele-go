@@ -1,0 +1,22 @@
+// Package usecase is the use case diagram type.
+package usecase
+
+import (
+	"github.com/Broderick-Westrope/pele-go/internal/core"
+	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
+)
+
+// Diagram is the use case diagram type. Register it with pele.Register.
+var Diagram = &core.Diagram{
+	Type: "usecase",
+	Parse: func(source string, _ *jsobj.Object, title *string, _ int, _ core.Limits) any {
+		t := ""
+		if title != nil {
+			t = *title
+		}
+		return parseUsecase(source, t)
+	},
+	Render: func(m any, config *jsobj.Object, rc *core.Context) core.Rendered {
+		return renderUsecase(m.(*usecaseModel), config, rc)
+	},
+}
