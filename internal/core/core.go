@@ -4,12 +4,12 @@ package core
 
 import (
 	"context"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/Broderick-Westrope/pele-go/internal/detect"
+	"github.com/Broderick-Westrope/pele-go/internal/jsnum"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 	"github.com/Broderick-Westrope/pele-go/internal/perr"
@@ -33,12 +33,13 @@ type Options struct {
 	AutoDirection       *bool
 	DirectionBreakpoint *float64
 	Padding             *float64
-	// Limit is the longest source accepted, in UTF-16 code units. Nil means 50,000.
-	Limit *int
+	// Limit is the longest source accepted, in UTF-16 code units. Nil means 50,000. The
+	// limits are numbers, as upstream's are: math.Inf(1) means no limit.
+	Limit *float64
 	// OutputLimit is the longest SVG returned, in UTF-16 code units. Nil means 4,000,000.
-	OutputLimit *int
+	OutputLimit *float64
 	// MaxEdges is the most edges a flowchart may have. Nil means 5,000.
-	MaxEdges *int
+	MaxEdges *float64
 	// LinkSchemes and ImageSchemes are the schemes a link or an image may use besides a
 	// relative address. Nil leaves upstream's defaults; an empty, non-nil list allows none.
 	LinkSchemes  []string
@@ -82,7 +83,7 @@ type Result struct {
 
 // Limits are set by the host. A diagram's own configuration cannot change them.
 type Limits struct {
-	MaxEdges int
+	MaxEdges float64
 }
 
 // Context is what a diagram type's renderer gets besides its model: the options as the core
@@ -194,7 +195,7 @@ type parsed struct {
 	config  *jsobj.Object
 }
 
-func optInt(p *int, def int) int {
+func optNumber(p *float64, def float64) float64 {
 	if p == nil {
 		return def
 	}
@@ -202,9 +203,9 @@ func optInt(p *int, def int) int {
 }
 
 func parseSource(ctx context.Context, source string, opts Options) parsed {
-	limit := optInt(opts.Limit, DefaultLimit)
-	if jsstr.Len(source) > limit {
-		perr.Throw(perr.New("Diagram source is longer than the limit of "+itoa(limit)+" characters.", perr.Limit))
+	limit := optNumber(opts.Limit, DefaultLimit)
+	if float64(jsstr.Len(source)) > limit {
+		perr.Throw(perr.New("Diagram source is longer than the limit of "+jsnum.Format(limit)+" characters.", perr.Limit))
 	}
 	pre := preprocess.Preprocess(source)
 	found, ok := detect.Detect(pre.Text)
@@ -235,7 +236,7 @@ func parseSource(ctx context.Context, source string, opts Options) parsed {
 	var model any
 	tagErrors(found, func() {
 		model = diagram.Parse(preprocess.EncodeEntities(src)+"\n", config, pre.Title, pre.LineOffset,
-			Limits{MaxEdges: optInt(opts.MaxEdges, DefaultMaxEdges)})
+			Limits{MaxEdges: optNumber(opts.MaxEdges, DefaultMaxEdges)})
 	})
 	return parsed{Detected: found, diagram: diagram, model: model, config: config}
 }
@@ -346,9 +347,9 @@ func RenderParsed(ctx context.Context, parsed *Parsed, opts Options) (res Result
 	var rendered Rendered
 	tagErrors(p.Detected, func() { rendered = p.diagram.Render(p.model, p.config, rc) })
 
-	outputLimit := optInt(opts.OutputLimit, DefaultOutputLimit)
-	if jsstr.Len(rendered.SVG) > outputLimit {
-		e := perr.New("Diagram output is longer than the limit of "+itoa(outputLimit)+" characters.", perr.Limit)
+	outputLimit := optNumber(opts.OutputLimit, DefaultOutputLimit)
+	if float64(jsstr.Len(rendered.SVG)) > outputLimit {
+		e := perr.New("Diagram output is longer than the limit of "+jsnum.Format(outputLimit)+" characters.", perr.Limit)
 		e.Type, e.MermaidType = p.Type, p.MermaidType
 		return Result{}, e
 	}
@@ -364,5 +365,3 @@ func RenderParsed(ctx context.Context, parsed *Parsed, opts Options) (res Result
 	}
 	return Result{Rendered: rendered, Type: p.Type, MermaidType: p.MermaidType}, nil
 }
-
-func itoa(n int) string { return strconv.Itoa(n) }

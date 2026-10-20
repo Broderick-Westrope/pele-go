@@ -223,7 +223,13 @@ var optionSets = []optionSet{
 	{
 		name:  "limits",
 		js:    map[string]any{"limit": 12, "outputLimit": 1600},
-		apply: func(o *pele.Options) { o.Limit, o.OutputLimit = ptr(12), ptr(1600) },
+		apply: func(o *pele.Options) { o.Limit, o.OutputLimit = ptr(12.0), ptr(1600.0) },
+	},
+	{
+		// JS compares lengths with these as numbers and writes them into the message.
+		name:  "fractional limits",
+		js:    map[string]any{"limit": 9.5, "outputLimit": 1600.5},
+		apply: func(o *pele.Options) { o.Limit, o.OutputLimit = ptr(9.5), ptr(1600.5) },
 	},
 }
 

@@ -128,19 +128,6 @@ func number(v any) float64 {
 	return v.(float64)
 }
 
-// intLimit turns a JS limit into the int the Go option holds: a length is an integer, so
-// length > limit holds exactly when length > floor(limit), and an infinite or NaN limit is
-// never passed.
-func intLimit(v float64) *int {
-	if math.IsInf(v, 1) || math.IsNaN(v) {
-		return ptr(math.MaxInt)
-	}
-	if math.IsInf(v, -1) {
-		return ptr(math.MinInt)
-	}
-	return ptr(int(math.Floor(v)))
-}
-
 func capturedOptions(t *testing.T, rec *jsobj.Object) pele.Options {
 	t.Helper()
 	var opts pele.Options
@@ -182,11 +169,11 @@ func capturedOptions(t *testing.T, rec *jsobj.Object) pele.Options {
 		case "padding":
 			opts.Padding = ptr(number(v))
 		case "limit":
-			opts.Limit = intLimit(number(v))
+			opts.Limit = ptr(number(v))
 		case "outputLimit":
-			opts.OutputLimit = intLimit(number(v))
+			opts.OutputLimit = ptr(number(v))
 		case "maxEdges":
-			opts.MaxEdges = intLimit(number(v))
+			opts.MaxEdges = ptr(number(v))
 		case "links":
 			opts.Links = ptr(v.(bool))
 		case "images":
