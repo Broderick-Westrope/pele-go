@@ -35,16 +35,9 @@ func parseSource(src string) (*agentflowDb, *perr.Error) {
 // skips the trimming after a closing brace. It returns the error the parser throws, if any.
 func parseRaw(src string, raw bool) (db *agentflowDb, err *perr.Error) {
 	db = newAgentflowDb(agentflowDbOptions{maxEdges: 500})
-	defer func() {
-		if r := recover(); r != nil {
-			e, ok := r.(*perr.Error)
-			if !ok {
-				panic(r)
-			}
-			err = e
-		}
-	}()
-	parseAgentflow(src, db, raw)
+	if err := catch(func() { parseAgentflow(src, db, raw) }); err != nil {
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -301,4 +294,19 @@ func difference(path string, a, b any) string {
 		return path + ": got " + stringify(a) + ", want " + stringify(b)
 	}
 	return ""
+}
+
+// catch runs fn and returns the error it throws, or nil.
+func catch(fn func()) (err *perr.Error) {
+	defer func() {
+		if r := recover(); r != nil {
+			e, ok := r.(*perr.Error)
+			if !ok {
+				panic(r)
+			}
+			err = e
+		}
+	}()
+	fn()
+	return nil
 }
