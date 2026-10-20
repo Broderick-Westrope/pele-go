@@ -20,7 +20,7 @@ func TestParseIntMatchesJS(t *testing.T) {
 		"", " ", "0", "+0", "12", " 12 ", "\u00a012\u3000", "+12", "-12.5", ".5", "5.", "1e3", "12px",
 		"0x1F", "0X1f", "0x", "-0x1F", "+0x10", "0xg", "0x1g", "0o17", "0b101", "Infinity", "-Infinity", "NaN",
 		"1_000", "00012", "\t\n42\r", "4 2", "-", "+", "+-1", "١٢", "\u202812", "9007199254740993",
-		"123456789012345678901234567890", "0x1fffffffffffff",
+		"0x1fffffffffffff",
 	}
 	for _, in := range inputs {
 		want, err := parseInt(goja.Undefined(), vm.ToValue(in))
@@ -41,6 +41,10 @@ func TestParseIntMatchesV8(t *testing.T) {
 		t.Fatalf("ParseInt(-0) = %v, want -0", got)
 	}
 	if got, want := jsnum.ParseInt("99999999999999999999999"), 1e23; got != want {
+		t.Fatalf("ParseInt = %v, want %v", got, want)
+	}
+	// goja's answer for this one differs between arm64 and amd64.
+	if got, want := jsnum.ParseInt("123456789012345678901234567890"), 1.2345678901234568e+29; got != want {
 		t.Fatalf("ParseInt = %v, want %v", got, want)
 	}
 	if got, want := jsnum.ParseInt("10000000000000000000000000000001"), 1e31; got != want {
