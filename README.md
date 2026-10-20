@@ -14,7 +14,7 @@ JavaScript runtime, so it builds with `CGO_ENABLED=0`.
 go get github.com/Broderick-Westrope/pele-go
 ```
 
-Go 1.26 or later.
+Go 1.26 or later: the port uses Go 1.26's `new(expr)` for pointers to values.
 
 ## Use
 
