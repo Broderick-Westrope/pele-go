@@ -109,6 +109,59 @@ section('util', () => {
   }
   chars.push([-1, tests.reduce((acc, f, k) => acc | (f(NaN) ? 1 << k : 0), 0)]);
   cases.push({ fn: 'chars', args: [], want: chars });
+
+  // Whether new URL() would run IDNA on the host: a host with anything but ASCII once
+  // percent-decoded, or an xn-- label. The port is exact only without it (see idna.go), so
+  // such inputs are kept to a few ordinary names.
+  const latin1 = (x) => { try { return new TextDecoder().decode(Uint8Array.from(unescape(x), (ch) => ch.charCodeAt(0) & 255)); } catch { return x; } };
+  const needsIDNA = (url) => {
+    const at = url.search(/https?:/i);
+    if (at === -1) return false;
+    let rest = url.slice(at).replace(/^[a-z]+:[\/\\]*/i, '');
+    rest = rest.split(/[\/\\?#]/)[0];
+    rest = rest.slice(rest.lastIndexOf('@') + 1).split(':')[0];
+    const host = latin1(rest);
+    return /[^\x00-\x7f]/.test(host) || /(^|\.)xn--/i.test(host) || /[^\x00-\x7f]/.test(rest);
+  };
+  const reference = m.reference.sanitizeUrl;
+  const urlPieces = ['http:', 'HTTP:', 'https:', 'https://', 'http://', 'javascript:', 'JaVaScRiPt:', ' ', '\n', '\t', '&#106;', '&#x6A;', '&#0000106',
+    '&#55357;&#56832;', '&colon;', '&newline;', '&TAB;', '%6A', '%25', '%2525', '%E0%A4%A', '%C3%A4', '%0A', '%20', '%2e', '%2E%2e', '\\', '%5Cn', '\\t',
+    'example.com', 'EXAMPLE.com', 'Ex.A_b-c', '/path', '/a/../b', '/./c', '?q=1', '#frag', 'mailto:', 'tel:', 'data:', 'vbscript:', 'user@',
+    'a@b@', 'u:p@', '0x7f.1', '192.168.0.1', '1.2.3.4.5', '256', '0x', '08', '..', '.', '/', '//', 'ä', '😀', '\u2028', '\u0130', '\u212a',
+    '[::1]', ':80', ':0443', ':99999', '^', '|', '{', '`', '"', '<', "'", 'obsidian://open', '\ud800', 'note', 'C:\\x', '%EF%BB%BF'];
+  for (let i = 0; i < 4000; i++) {
+    const url = (random() < 0.6 ? pick(['http:', 'https:', 'HTTP:', ' http:']) : '') + compose(urlPieces, 6);
+    if (needsIDNA(url) || needsIDNA(m.url.sanitizeUrl(url))) continue;
+    cases.push(call(m.url.sanitizeUrl, 'sanitizeUrl', [url]));
+  }
+  for (const url of ['https://example.com', 'http://EXAMPLE.com/Path?q=1#frag', 'click.html', './relative/path', '/absolute/path',
+    'mailto:someone@example.com', 'obsidian://open?vault=Notes&file=Idea', 'javascript:alert(1)', 'JaVaScRiPt:alert(1)', '  javascript:alert(1)',
+    'java\nscript:alert(1)', 'jav&#x09;ascript:alert(1)', '&#106;avascript:alert(1)', 'data:text/html,<script>alert(1)</script>',
+    'vbscript:msgbox(1)', 'javascript&colon;alert(1)', '%6A%61%76%61%73%63%72%69%70%74:alert(1)', 'https://example.com/a b', 'http://',
+    'ftp://example.com/file', 'www.example.com', 'C:\\Users\\file.txt', '\\\\server\\share', 'note name with spaces', '#heading', '?query=1', '',
+    'about:blank', 'tel:+123456', 'https://example.com/%E0%A4%A']) {
+    cases.push(call(m.url.sanitizeUrl, 'sanitizeUrl', [url]));
+    // Upstream's tests/util/url.test.ts: the same answers as @braintree/sanitize-url.
+    if (m.url.sanitizeUrl(url) !== reference(url)) throw new Error('upstream differs from the reference for ' + url);
+  }
+  for (const url of ['http:münchen.de', 'http:MÜNCHEN.de/a', 'https:bücher.example/x?y', 'http:例え.jp', 'http:xn--mnchen-3ya.de', 'http:пример.рф']) {
+    cases.push(call(m.url.sanitizeUrl, 'sanitizeUrl', [url]));
+  }
+  for (let i = 0; i < 300; i++) cases.push(call(m.url.safeUrl, 'safeUrl', [compose(['&#106;', 'javascript:', '&colon;', 'http:', 'x.com', '&amp;', '#35;', '/p'], 4)]));
+
+  const optionSets = [{}, { links: false }, { images: false }, { linkSchemes: [] }, { linkSchemes: ['obsidian'], imageSchemes: ['data'] }, { linkRel: '' },
+    { linkRel: 'noopener "x"' }];
+  const linkInputs = ['http://x', 'HTTPS://x', 'mailto:a', 'tel:1', 'obsidian://open', 'data:x', 'file:///x', '//server', '\\\\share', '/\\x', 'rel/path',
+    '#a', 'a:b', '1a:b', 'a+b.c-d:x', 'é:x', 'about:blank'];
+  for (const options of optionSets) {
+    for (const url of linkInputs) {
+      cases.push(call((u, o) => m.url.linkUrl(u, o), 'linkUrl', [url, options]));
+      cases.push(call((u, o) => m.url.imageUrl(u, o), 'imageUrl', [url, options]));
+      cases.push(call((u, o) => { const links = []; const svg = m.url.linked('<b/>', u, 'id"1', links, o, ' target="_blank"'); return { svg, links }; },
+        'linked', [url, options]));
+    }
+    cases.push(call((o) => m.url.relAttr(o), 'relAttr', [options]));
+  }
   return cases;
 });
 
