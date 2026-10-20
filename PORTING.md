@@ -77,6 +77,10 @@ overflow, `setDate`, DST) in a helper package `internal/jsdate` with tests again
 levels per recursive function unless upstream bounds it) and call `perr.ThrowRange()` past
 it.
 
+**Layout types in `svg`:** `svg/cluster.ts` and `svg/shapes.ts` take layout's `CNode`; until
+`internal/layout` exists they take `svg.Box` (its x, y, w, h and isGroup), and `svg/edges.ts`'s
+`ease` is copied from `layout/layered.ts`. Switch them to the layout types when it lands.
+
 **Concurrency:** no mutable package-level state except tables built with `sync.OnceValue`.
 Per-render state goes on the model or `core.Context`.
 
@@ -97,7 +101,12 @@ Per-render state goes on the model or `core.Context`.
 4. Debugging a mismatch: `go test -run 'TestCapturedParity/<type>' .` names the source and
    options. Render it with `oracle.NewNode()` or `oracle.New()` to see upstream's SVG and
    diff it against the port's. `internal/oracle` has both.
-5. goja is not a faithful JS engine for lone surrogates, numbers past 2^64 and `JSON.parse`
+5. Shared modules (`internal/util`, `internal/svg`, `internal/diagrams/common`,
+   `internal/jsmath`) have no oracle of their own: their tests replay calls of upstream's
+   functions under Node, written by `node scripts/gen-shared-cases.mjs /tmp/pele-1.7.0`
+   into each package's `testdata/cases.json` (`internal/fixture` runs them). Add cases there
+   when you change or use one of them in a new way.
+6. goja is not a faithful JS engine for lone surrogates, numbers past 2^64 and `JSON.parse`
    of out-of-range numbers. When goja and V8 disagree, V8 wins.
 
 `go vet ./...`, `gofmt` and `go test -race ./...` must be clean. Run
