@@ -14,98 +14,166 @@ holds the pipeline. Anvil imports it instead of its own copy, with no change in
 output, memory or latency. The proxy can then import a tagged version.
 
 **Scope:**
-- In:
-  - Create the nested module `raster/`, with its own `go.mod`, in this repo.
-  - Move these files from `anvil/internal/mermaid` into it, with their tests:
-    `pele.go` (`Renderer`, `Options`, `Result`, `MaxSourceBytes`,
-    `ErrSourceTooLarge`, `ErrRenderTimeout`), `raster.go` (`Rasterizer`,
-    `RasterOptions`, `MaxPixels`), `vars.go` (`Theme`), `fonts.go`, `fonts/`
-    and `resvg/` (Go wrapper, `resvg.wasm`, `LICENSE`).
-  - Switch Anvil to import the module, keep `HTMLDocument` (`export.go`) in
-    Anvil, and delete Anvil's moved copies.
-  - Move ADR 0004's "Upgrading" steps for resvg and fonts into the module's
-    README. Anvil's ADRs point there.
-  - Tag the first release as `raster/v0.1.0`.
-- Out:
-  - Any API change, new behaviour or new options. The proxy adds PNG encoding
-    and its own lifecycle on top.
-  - PNG encoding inside the module.
+- **In:**
+  - Create the nested module `raster/` with its own `go.mod`, `LICENSE` (MIT)
+    and `README.md`.
+  - Move these from `anvil/internal/mermaid`, with their tests:
+    - `pele.go`: `Renderer`, `Options`, `Result`, `MaxSourceBytes`,
+      `ErrSourceTooLarge`, `ErrRenderTimeout`.
+    - `raster.go`: `Rasterizer`, `RasterOptions`, `MaxPixels`.
+    - `vars.go`: `Theme`.
+    - `fonts.go` and `fonts/`.
+    - `resvg/` as `raster/internal/resvg`, with its Go wrapper, `resvg.wasm`
+      and `LICENSE`.
+  - Add a benchmark harness to Anvil before the switch (see "Proving no
+    regression").
+  - Switch Anvil to the module, keep `HTMLDocument` (`export.go`) in Anvil,
+    and delete Anvil's moved copies.
+  - Add a CI job for `raster/` in pele-go.
+  - Move ADR 0004's "Upgrading" steps for resvg and fonts into
+    `raster/README.md`, adding the release order below. Anvil's ADRs point
+    there.
+  - Tag `raster/v0.1.0`.
+- **Out:**
+  - New behaviour or options.
+  - PNG encoding.
   - Any change to pele-go's root module.
+  - A committed `go.work` in either repo.
 
 **Constraints:**
-- **No performance regression in Anvil.** Move the API exactly as it is:
+- **No performance regression in Anvil.** The API moves as it is:
   - Layout (`Renderer.Render`) and rasterizing (`Rasterizer.Rasterize`) stay
-    separate calls. Anvil runs layout first to work out the fit.
+    separate calls, because Anvil lays out first to compute the fit.
   - `Rasterize` still returns `*image.RGBA`.
   - The caller still owns the `Rasterizer`: it constructs it with `cacheDir`
     and calls `Close`. Anvil's lazy load, 20 s idle teardown and shared
-    wazero compilation cache (ADR 0004 and 0005) keep working unchanged.
-- **Root module stays stdlib-only.** `wazero` is required only by
-  `raster/go.mod`. Consumers of `github.com/Broderick-Westrope/pele-go` don't
-  pull it in.
-- **`raster/go.mod` declares `go 1.26.0`,** the same as the root module. The
-  proxy builds on `golang:1.26` with `CGO_ENABLED=0`.
-- **Fonts and `resvg.wasm` change together.** They live in one package, and the
-  README says so.
-- **Licences travel with their files:** resvg (Apache-2.0), DejaVu/Bitstream
-  Vera, and pele-go's MIT.
+    wazero compilation cache (ADR 0004 and 0005) are unchanged.
+- **pele-go's root package stays dependency-free.** The root module already
+  requires `goja` and `x/image` for tests and tooling. It must not gain
+  `wazero`: only `raster/go.mod` requires it.
+- **`raster/go.mod`:**
+  - Declares `go 1.26.0`. The proxy builds on `golang:1.26` with
+    `CGO_ENABLED=0`, and wazero v1.12.0 needs go 1.25.
+  - Pins exactly what Anvil uses today: `pele-go v0.1.0` and
+    `wazero v1.12.0`. Minimal version selection must not silently upgrade
+    Anvil.
+  - Adds `testify` as a test-only dependency, which the root module doesn't
+    use.
+- **Fonts and `resvg.wasm` change together.** The fonts are embedded in
+  `raster` and the wasm in `raster/internal/resvg`. A test, together with the
+  README, enforces the pairing (see Success Criteria).
+- **Licences travel with their files:**
+  - `raster/LICENSE` is MIT, because a module zip doesn't include the root
+    `LICENSE`.
+  - resvg is Apache-2.0, and the fonts are DejaVu/Bitstream Vera.
+  - The moved code changes from Anvil's FSL-1.1-MIT to MIT. Brodie is its
+    only author.
+
+**Test split:**
+- **Module tests:** the moved `pele_test.go`, `raster_test.go`, `vars_test.go`
+  and `resvg_test.go`, with these changes:
+  - `TestRasterizeDiagrams` and `TestRenderLabelDeclaringVariablesStaysSmall`
+    call `HTMLDocument` today. In the module they assert on
+    `ResolveVars(...)` instead: no `var(` remains, and the size stays
+    bounded.
+  - `MERMAID_TEST_OUT` keeps writing the PNGs and `flowchart.svg` from the
+    module.
+- **Anvil keeps `export_test.go`,** with its own copies of the fixtures it
+  used from `raster_test.go` (`sampleDiagrams`, `testTheme`,
+  `explodingVarsSVG`). It counts `raster.FontFaces()` instead of
+  `fontFaces`, and keeps a label-declares-variables case for `HTMLDocument`.
+- **Heap-growth tests** (`TestRenderAcrossGCsDoesNotGrow`,
+  `TestRenderReleasesGrownMemory`) must be stable under `-race` in CI.
+  Otherwise they skip under `-race` with a reason.
+
+**New public surface (and nothing else):**
+- `ResolveVars(svg string, theme Theme) (string, error)`: the unexported
+  `resolveVars` without the `post` hooks. `HTMLDocument` needs it.
+- `type FontFace struct { Data []byte; Weight, Style string }` and
+  `FontFaces() []FontFace`. `Data` aliases the embedded bytes, and the
+  documentation says callers must not modify it.
+- `ErrRasterTimeout`, which is the same value as `internal/resvg`'s timeout
+  error, so `errors.Is` keeps working. Anvil's `mermaid_render.go:81` changes
+  from `resvg.ErrRenderTimeout` to `raster.ErrRasterTimeout`.
+
+**Proving no regression:**
+- **Harness:** before the switch, add `anvil/internal/mermaidbench/` as a
+  test-only package in its own commit. It uses only the exported API, so the
+  after-run differs from the before-run only in its import path. It measures:
+  1. Source-to-SVG median and p99 over pele-go's oracle corpus (path from
+     `PELE_CORPUS`), at `MaxWidth` 900, with five passes after a warm-up.
+  2. Added RSS and Go heap in use after rendering and rasterizing `info` 20
+     times with resvg loaded from a warm compilation cache, keeping the last
+     image. This is ADR 0006's method, reimplemented because
+     `scripts/anvil-memory` no longer applies.
+- **Runs:** 4 runs before (at the harness commit) and 4 after, back to back
+  on the same machine.
+- **Pass:** each after-median within ±5% of the before-median, and added RSS
+  within ±2 MB.
 
 **Success Criteria:**
-- [ ] `go test ./...` passes in `raster/` with every moved test, including the
-  resvg tests and the label-sizing test.
-- [ ] Anvil's `go test ./...` and its lint/typecheck pass against the module.
-  The repo's `go.work`, or a `replace` directive, is used during development;
-  the final Anvil commit requires the tag `raster/v0.1.0` with no `replace`.
-- [ ] Every file `MERMAID_TEST_OUT` writes from Anvil is byte-identical before
-  and after the switch, run back to back (ADR 0006's method; Gantt marks the
-  current time).
-- [ ] `scripts/anvil-memory` added RSS and Go heap in use, and source-to-SVG
-  median/p99 over the oracle corpus, are within run-to-run noise of ADR
-  0006's figures, measured before and after.
-- [ ] `go list -m all` in the root module shows no `wazero`.
-- [ ] Building a `CGO_ENABLED=0` binary that imports `raster` with Go 1.26
-  succeeds.
-- [ ] Anvil's `internal/mermaid` holds only `export.go` and its test, and the
-  binary size changes by less than 100 KB.
+- [ ] `go vet`, staticcheck and `go test -race ./...` pass in `raster/`, in a
+  new pele-go CI job (`working-directory: raster`,
+  `go-version-file: raster/go.mod`).
+- [ ] The same CI job builds a test binary with `GOTOOLCHAIN=go1.26.0
+  CGO_ENABLED=0`.
+- [ ] A test fails if the SHA-256s of `raster/fonts/*.ttf` and
+  `fontmeasure/testdata/*.ttf` differ.
+- [ ] `go list -m all` in pele-go's root module shows no `wazero`.
+- [ ] Anvil's `go test ./...` and lint pass against `raster/v0.1.0` with no
+  `replace`. A temporary `replace` is used only during development.
+- [ ] Output equivalence: the union of files that `MERMAID_TEST_OUT` writes
+  from `raster` and from Anvil after the switch matches Anvil's set before
+  the switch, name for name and byte for byte. The runs are back to back,
+  because Gantt marks the current time.
+- [ ] The harness passes the thresholds above, and the numbers are recorded
+  in Anvil's PR.
+- [ ] Anvil's `internal/mermaid` holds only `export.go` and its test, and
+  the binary size changes by less than 100 KB.
 
 **Design Decisions:**
-- **Module name `raster`, not `png`.** It returns RGBA pixels and also owns the
-  font-matched layout wrapper. PNG encoding is the caller's choice.
-- **A nested module rather than a package in the root module.** This keeps
-  pele-go's dependency-free promise (ADR 0006) and lets the raster pipeline
-  version on its own.
-- **A nested module rather than a new repo.** The fonts must match pele-go's
-  `fontmeasure` behaviour, and pele-go's oracle corpus is the natural test
-  input. Keeping them in one repo means one PR can change both.
+- **The module is named `raster`, not `png`.** It returns RGBA, and PNG
+  encoding is up to the caller.
+- **A nested module, not a package in the root module.** This keeps wazero
+  out of the root module's graph and lets the raster pipeline version on its
+  own.
+- **A nested module, not a new repo.** The fonts must match `fontmeasure`'s
+  test fonts, and the hash test only works with both in one repo.
+- **`resvg` becomes internal.** Its ABI assumptions shouldn't become semver
+  surface for a company consumer, and the one error Anvil checks is
+  re-exported.
 - **`HTMLDocument` stays in Anvil.** It names the font family
-  `Anvil DejaVu Sans`, and moving or renaming it would change Anvil's exported
-  pages. To support it, the module exports `ResolveVars(svg string, theme
-  Theme) (string, error)` and `FontFaces()`, which returns the embedded faces
-  with their CSS weight and style. These are the only two additions to the
-  surface, and they exist because `export.go` already uses the unexported
-  versions.
-- **The module, not callers, sets the layout options** (responsive off, images
-  off, `MaxWidth` always set). Both callers render model-written source, so
-  images must stay off for both.
-- **Declined: a one-shot `Render(source) -> PNG` helper.** It would merge
-  layout and raster, hide the engine's lifecycle, and add an encode that
-  Anvil doesn't need. Each of those is a performance regression for Anvil.
-  The proxy writes its own five lines of glue.
-- **Declined: copying the files into the proxy.** That gives two copies of the
-  font/resvg invariant and two resvg upgrade paths.
-- **Ownership risk acknowledged.** A company service will depend on a personal
-  repo. The Go checksum database pins each tag, but whoever owns the repo
-  controls future versions. If Eucalyptus Security objects, the fallback is
-  to mirror the module under `eucalyptusvc`, which is a rename for the proxy.
+  `Anvil DejaVu Sans`, and moving it would change Anvil's exported pages.
+- **The module sets the layout options** (responsive off, images off,
+  `MaxWidth` always set). Both callers render model-written source.
+- **Release order when fonts or fontmeasure change:**
+  1. Tag the root.
+  2. Bump `raster/go.mod`.
+  3. Tag `raster/`.
+
+  One PR can't do all three, and the README documents the order.
+- **Declined: a one-shot `Render(source) -> PNG` helper.** It would merge the
+  two steps, hide the lifecycle and add an encode, and each of those is a
+  regression for Anvil.
+- **Declined: copying the files into the proxy.** That means two copies of
+  the invariant and two upgrade paths.
+- **Ownership risk acknowledged.** The proxy's Dockerfile sets
+  `GOPRIVATE=github.com`, so it skips both the checksum database and the
+  module proxy. Only the proxy's `go.sum` pins the module, and builds fetch
+  straight from the personal repo. A deleted or renamed repo breaks the
+  proxy's builds. The fallback is a mirror under `eucalyptusvc`, which is a
+  rename for the proxy. Whether to do that now is the Security reviewer's
+  call (see the proxy spec).
 
 **Context Files:**
 - `anvil/internal/mermaid/{pele,raster,vars,fonts,export}.go` and tests
 - `anvil/internal/mermaid/resvg/resvg.go`, `resvg.wasm`, `LICENSE`
 - `anvil/internal/mermaid/fonts/`
 - `anvil/internal/ui/model/mermaid_render.go` (lazy load, idle teardown,
-  two-pass fit) and `graphics.go` (theme mapping)
-- `anvil/docs/adr/0004-mermaid-rendering.md`, `0005-cross-instance-sharing.md`,
-  `0006-pele-go.md`
-- `pele-go/fontmeasure/`, `pele-go/scripts/anvil-memory`,
+  two-pass fit, `resvg.ErrRenderTimeout` at :81) and `graphics.go`
+- `anvil/docs/adr/0004-mermaid-rendering.md`,
+  `0005-cross-instance-sharing.md`, `0006-pele-go.md`
+- `pele-go/fontmeasure/testdata/`, `pele-go/.github/workflows/ci.yml`,
   `pele-go/internal/oracle/testdata/corpus`
-- Consumer spec: `agent.credential.proxy/plans/design-2026-10-22-slack-diagrams.md`
+- Consumer spec:
+  `agent.credential.proxy/plans/design-2026-10-22-slack-diagrams.md`
