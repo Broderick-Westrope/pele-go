@@ -127,7 +127,8 @@ output, memory or latency. The proxy can then import a tagged version.
     line up with the before/after split.
 - **Pass:**
   - For metrics 1–3, benchstat reports no statistically significant
-    regression (p < 0.05), and the median of per-run medians is within ±5%.
+    regression (p < 0.05), and the median of per-run medians is at most 5%
+    slower. The harness prints Go benchmark format so benchstat can read it.
   - Added RSS is within ±2 MB.
   - Heap in use and p99 latency are recorded, not gated.
   - When B loads after A, the compilation cache directory gains no new
