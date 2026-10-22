@@ -93,8 +93,14 @@ output, memory or latency. The proxy can then import a tagged version.
   `FontFaces() []FontFace`. `Data` aliases the embedded bytes, and the
   documentation says callers must not modify it.
 - `ErrRasterTimeout`, which is the same value as `internal/resvg`'s timeout
-  error, so `errors.Is` keeps working. Anvil's `mermaid_render.go:81` changes
-  from `resvg.ErrRenderTimeout` to `raster.ErrRasterTimeout`.
+  error, so `errors.Is` keeps working.
+  - Its doc comment calls it the resvg timeout, as opposed to
+    `ErrRenderTimeout`, the layout timeout.
+  - Anvil's `mermaid_render.go:81` changes from `resvg.ErrRenderTimeout` to
+    `raster.ErrRasterTimeout`.
+  - Anvil's local variables named `raster` (`mermaid_render.go:204,249`,
+    `graphics_copy_test.go:83`) are renamed so they don't shadow the
+    package.
 
 **Proving no regression:**
 - **Harness:** before the switch, add `anvil/internal/mermaidbench/` as a
@@ -102,14 +108,31 @@ output, memory or latency. The proxy can then import a tagged version.
   after-run differs from the before-run only in its import path. It measures:
   1. Source-to-SVG median and p99 over pele-go's oracle corpus (path from
      `PELE_CORPUS`), at `MaxWidth` 900, with five passes after a warm-up.
-  2. Added RSS and Go heap in use after rendering and rasterizing `info` 20
-     times with resvg loaded from a warm compilation cache, keeping the last
-     image. This is ADR 0006's method, reimplemented because
-     `scripts/anvil-memory` no longer applies.
-- **Runs:** 4 runs before (at the harness commit) and 4 after, back to back
-  on the same machine.
-- **Pass:** each after-median within ±5% of the before-median, and added RSS
-  within ±2 MB.
+     Sources that fail must fail identically in both builds, and their
+     count is reported.
+  2. `NewRasterizer` wall time from a warm compilation cache, over 20
+     iterations.
+  3. `Rasterize` wall time at Anvil's scale, 20 iterations each on `info`
+     and every `sampleDiagrams` entry.
+  4. Added RSS and Go heap in use after rendering and rasterizing `info` 20
+     times with resvg loaded from a warm cache, keeping the last image. This
+     is ADR 0006's method, reimplemented because `scripts/anvil-memory` no
+     longer applies.
+
+  The harness skips when `PELE_CORPUS` is unset, so Anvil's CI stays green.
+- **Runs:**
+  - Build `go test -c` binaries at the harness commit (A) and after the
+    switch (B).
+  - Run them interleaved, ABABABAB, on the same machine, so drift doesn't
+    line up with the before/after split.
+- **Pass:**
+  - For metrics 1–3, benchstat reports no statistically significant
+    regression (p < 0.05), and the median of per-run medians is within ±5%.
+  - Added RSS is within ±2 MB.
+  - Heap in use and p99 latency are recorded, not gated.
+  - When B loads after A, the compilation cache directory gains no new
+    entries. The wasm bytes and the wazero version are unchanged, so the
+    cache must still hit.
 
 **Success Criteria:**
 - [ ] `go vet`, staticcheck and `go test -race ./...` pass in `raster/`, in a
@@ -118,7 +141,9 @@ output, memory or latency. The proxy can then import a tagged version.
 - [ ] The same CI job builds a test binary with `GOTOOLCHAIN=go1.26.0
   CGO_ENABLED=0`.
 - [ ] A test fails if the SHA-256s of `raster/fonts/*.ttf` and
-  `fontmeasure/testdata/*.ttf` differ.
+  `fontmeasure/testdata/*.ttf` differ. It skips with a reason when
+  `../fontmeasure` is absent, for example when the module is tested from
+  the module cache.
 - [ ] `go list -m all` in pele-go's root module shows no `wazero`.
 - [ ] Anvil's `go test ./...` and lint pass against `raster/v0.1.0` with no
   `replace`. A temporary `replace` is used only during development.
@@ -130,6 +155,8 @@ output, memory or latency. The proxy can then import a tagged version.
   in Anvil's PR.
 - [ ] Anvil's `internal/mermaid` holds only `export.go` and its test, and
   the binary size changes by less than 100 KB.
+- [ ] Anvil's ADRs 0004 and 0006 and `AGENTS.md` (lines 49, 219 and 239
+  describe `internal/mermaid`) point at the module.
 
 **Design Decisions:**
 - **The module is named `raster`, not `png`.** It returns RGBA, and PNG
