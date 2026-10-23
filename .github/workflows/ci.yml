@@ -63,18 +63,31 @@ jobs:
   # raster is a nested module, so the root jobs' ./... doesn't reach it.
   raster:
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         # The oldest Go raster/go.mod allows, which the agent proxy builds
-        # with, and the newest, which Anvil tracks.
+        # with, on every OS Anvil ships for (wazero compiles natively per
+        # platform), and the newest Go, which Anvil tracks.
         include:
-          - go-version-file: raster/go.mod
-          - go-version: stable
+          - os: ubuntu-latest
+            go-version-file: raster/go.mod
+          - os: macos-latest
+            go-version-file: raster/go.mod
+          - os: windows-latest
+            go-version-file: raster/go.mod
+          - os: ubuntu-latest
+            go-version: stable
+    env:
+      # Races don't depend on the OS, and the detector slows tests several
+      # times over, so only Linux runs it.
+      RACE: ${{ matrix.os == 'ubuntu-latest' && '-race' || '' }}
+      MIN_GO_LINUX: ${{ matrix.os == 'ubuntu-latest' && matrix.go-version-file != '' }}
     defaults:
       run:
+        shell: bash
         working-directory: raster
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -87,12 +100,12 @@ jobs:
         run: go vet ./...
       # A pinned staticcheck can't always analyse the newest Go.
       - name: staticcheck
-        if: matrix.go-version-file != ''
+        if: env.MIN_GO_LINUX == 'true'
         run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
-      - name: go test -race
-        run: go test -race -timeout 15m ./...
+      - name: go test
+        run: go test $RACE -timeout 15m ./...
       - name: Build tests with Go 1.26.0 and no cgo
-        if: matrix.go-version-file != ''
+        if: env.MIN_GO_LINUX == 'true'
         env:
           GOTOOLCHAIN: go1.26.0
           CGO_ENABLED: "0"
@@ -101,8 +114,14 @@ jobs:
       # this commit would break raster once tagged. It can't gate: a root
       # change and raster's fix for it land in separate releases.
       - name: go test against pele-go at this commit
+        if: env.MIN_GO_LINUX == 'true'
         continue-on-error: true
-        run: go work init .. . && go vet ./... && go test ./...
+        run: |
+          go work init .. .
+          if ! { go vet ./... && go test ./...; }; then
+            echo "::warning::raster fails against pele-go at this commit; it will need a fix before the next root tag is bumped into raster/go.mod"
+            exit 1
+          fi
 
   fuzz-smoke:
     if: github.event_name != 'schedule'
