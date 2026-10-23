@@ -189,9 +189,10 @@ output, memory or latency. The proxy can then import a tagged version.
   `GOPRIVATE=github.com`, so it skips both the checksum database and the
   module proxy. Only the proxy's `go.sum` pins the module, and builds fetch
   straight from the personal repo. A deleted or renamed repo breaks the
-  proxy's builds. The fallback is a mirror under `eucalyptusvc`, which is a
-  rename for the proxy. Whether to do that now is the Security reviewer's
-  call (see the proxy spec).
+  proxy's builds. A mirror under `eucalyptusvc` is an optional fallback,
+  which would be a rename for the proxy. It isn't required. The proxy spec
+  lists the better-known Go packages that were considered and why none can
+  replace pele-go.
 
 **Context Files:**
 - `anvil/internal/mermaid/{pele,raster,vars,fonts,export}.go` and tests
