@@ -2,7 +2,8 @@ package raster
 
 import _ "embed"
 
-// These are the same DejaVu Sans subsets baked into resvg/resvg.wasm, so
+// These are the same DejaVu Sans subsets baked into internal/resvg/resvg.wasm,
+// so
 // Pele lays labels out with the widths resvg will actually draw.
 var (
 	//go:embed fonts/DejaVuSans.ttf

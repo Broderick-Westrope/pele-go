@@ -25,7 +25,9 @@ type RasterOptions struct {
 	// Scale multiplies the diagram's natural size.
 	Scale float64
 	// MaxPixels caps width x height, shrinking Scale as far as it must to
-	// fit; zero uses [MaxPixels].
+	// fit; zero uses [MaxPixels]. resvg's memory is capped at 256 MB, which
+	// leaves room for about 16M pixels (64 MB of RGBA); a much larger cap
+	// can fail the render instead.
 	MaxPixels int
 }
 
@@ -37,7 +39,10 @@ type Rasterizer struct {
 
 // NewRasterizer compiles resvg, which takes a few hundred milliseconds, or
 // loads it from cacheDir when an earlier Rasterizer left it there. An empty
-// cacheDir always compiles.
+// cacheDir always compiles. The Rasterizer keeps ctx for its whole life:
+// every Rasterize and Close runs under it and fails once it is done, with
+// [ErrRasterTimeout] if it had a deadline. Pass a long-lived context, not a
+// request's.
 func NewRasterizer(ctx context.Context, cacheDir string) (*Rasterizer, error) {
 	e, err := resvg.New(ctx, cacheDir)
 	if err != nil {

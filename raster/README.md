@@ -31,7 +31,8 @@ if err != nil {
 	return err
 }
 
-rast, err := raster.NewRasterizer(ctx, cacheDir)
+// The Rasterizer keeps this context for its whole life.
+rast, err := raster.NewRasterizer(context.Background(), cacheDir)
 if err != nil {
 	return err
 }
@@ -51,18 +52,20 @@ if err != nil {
   compiles resvg (a few hundred milliseconds, about 75 MB of short-lived garbage) unless
   `cacheDir` holds code an earlier `Rasterizer` compiled, in which case it loads in
   milliseconds. The cache holds native code, so the directory must be writable only by you.
-  `Close` frees everything it holds.
+  It keeps the context you create it with, and fails every call once that context is done,
+  so give it a long-lived one. `Close` frees everything it holds.
 - The image's background is transparent. Draw it over the theme's `pele-bg` yourself if you
   need an opaque one, for example before posting it somewhere with a different background.
 - `Rasterize` caps the image at `RasterOptions.MaxPixels` (default `MaxPixels`), shrinking
-  the scale only as far as it must. resvg running past 10 seconds returns
-  `ErrRasterTimeout`, wrapped.
+  the scale only as far as it must. resvg's memory is capped at 256 MB, room for about 16M
+  pixels. resvg running past 10 seconds returns `ErrRasterTimeout`, wrapped.
 - This module requires pele-go itself, and is tested against that version only. Take
   pele-go upgrades through raster releases rather than bumping
   `github.com/Broderick-Westrope/pele-go` in your own `go.mod`.
 - `Theme` maps Pele's CSS variables, without the leading `--`, to values. resvg can't
   resolve CSS variables, so `Rasterize` substitutes them first. `ResolveVars` does the same
-  for SVG you show elsewhere, and `FontFaces` returns the fonts to embed alongside it.
+  for SVG you show in a browser, and `FontFaces` returns the fonts to embed alongside it.
+  Unlike `Rasterize`, it leaves `color-mix()` for the browser to resolve.
 
 ## Upgrading resvg or the fonts
 

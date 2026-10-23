@@ -30,8 +30,10 @@ var rootStyle = regexp.MustCompile(`^<svg(?:\s+[^\s=>]+="[^"]*")*?\s+style="([^"
 // ResolveVars substitutes every CSS var() in svg's attribute values against
 // theme, as [Rasterizer.Rasterize] does before drawing. Use it to show the
 // same colours somewhere that doesn't apply the theme itself, such as a
-// standalone page. It returns an error when the variables nest too deep or
-// would expand the SVG past a few times its size.
+// standalone page. Unlike Rasterize, it leaves color-mix() alone, which
+// browsers draw but resvg can't. It returns an error when the variables
+// nest too deep or would expand the SVG past four times its size or
+// 1 MiB, whichever is larger.
 func ResolveVars(svg string, theme Theme) (string, error) {
 	return resolveVars(svg, theme)
 }
