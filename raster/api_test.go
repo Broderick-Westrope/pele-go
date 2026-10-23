@@ -2,6 +2,8 @@ package raster_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,6 +27,39 @@ func TestRasterizePastItsDeadlineReturnsErrRasterTimeout(t *testing.T) {
 	_, err = rast.Rasterize(res, nil, raster.RasterOptions{Scale: 1})
 	require.ErrorIs(t, err, raster.ErrRasterTimeout)
 	require.NotErrorIs(t, err, raster.ErrRenderTimeout, "it's the rasterizing timeout, not the layout one")
+}
+
+func nestedSubgraphs(depth int) string {
+	var b strings.Builder
+	b.WriteString("flowchart TD\n")
+	for i := range depth {
+		fmt.Fprintf(&b, "subgraph s%d\n", i)
+	}
+	b.WriteString("a --> b\n")
+	b.WriteString(strings.Repeat("end\n", depth))
+	return b.String()
+}
+
+func TestRasterizeStopsAtItsTimeoutAndRecovers(t *testing.T) {
+	t.Parallel()
+
+	r, err := raster.NewRenderer()
+	require.NoError(t, err)
+	rast, err := raster.NewRasterizer(t.Context(), "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = rast.Close() })
+	// Nested clusters paint overlapping rects, so this takes about a
+	// second, far past the timeout.
+	res, err := r.Render(t.Context(), nestedSubgraphs(10), raster.Options{MaxWidth: 1000})
+	require.NoError(t, err)
+
+	start := time.Now()
+	_, err = rast.Rasterize(res, nil, raster.RasterOptions{Scale: 2, Timeout: time.Millisecond})
+	require.ErrorIs(t, err, raster.ErrRasterTimeout)
+	require.Less(t, time.Since(start), 500*time.Millisecond)
+
+	_, err = rast.Rasterize(res, nil, raster.RasterOptions{Scale: 0.25})
+	require.NoError(t, err, "a zero Timeout uses the default, and the next raster starts fresh")
 }
 
 func TestResolveVarsLeavesColorMix(t *testing.T) {

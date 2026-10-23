@@ -59,8 +59,8 @@ if err != nil {
   need an opaque one, for example before posting it somewhere with a different background.
 - `Rasterize` caps the image at `RasterOptions.MaxPixels` (default `MaxPixels`), shrinking
   the scale only as far as it must. resvg's memory is capped at 256 MB, room for at least
-  16M pixels; past that cap the render fails with a wasm error. resvg running past 10
-  seconds returns `ErrRasterTimeout`, wrapped.
+  16M pixels; past that cap the render fails with a wasm error. resvg running past
+  `RasterOptions.Timeout` (default 10 seconds) stops and returns `ErrRasterTimeout`, wrapped.
 - This module requires pele-go itself, and is tested against that version only. Take
   pele-go upgrades through raster releases rather than bumping
   `github.com/Broderick-Westrope/pele-go` in your own `go.mod`.

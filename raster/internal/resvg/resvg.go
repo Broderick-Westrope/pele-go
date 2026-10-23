@@ -166,6 +166,15 @@ func (e *Engine) Close() error {
 // derived from the other and the SVG's aspect ratio; both zero uses the
 // intrinsic size.
 func (e *Engine) Render(svg []byte, width, height int) (*image.RGBA, error) {
+	return e.RenderWithin(svg, width, height, 0)
+}
+
+// RenderWithin is Render bounded by timeout instead of the Engine's
+// default; zero uses the default.
+func (e *Engine) RenderWithin(svg []byte, width, height int, timeout time.Duration) (*image.RGBA, error) {
+	if timeout == 0 {
+		timeout = e.limits.Timeout
+	}
 	if e.inst == nil {
 		inst, err := e.instantiate()
 		if err != nil {
@@ -173,7 +182,7 @@ func (e *Engine) Render(svg []byte, width, height int) (*image.RGBA, error) {
 		}
 		e.inst = inst
 	}
-	ctx, cancel := context.WithTimeout(e.ctx, e.limits.Timeout)
+	ctx, cancel := context.WithTimeout(e.ctx, timeout)
 	img, err := e.inst.renderRaw(ctx, svg, width, height)
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		err = ErrRenderTimeout

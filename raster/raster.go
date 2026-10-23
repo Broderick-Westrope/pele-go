@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Broderick-Westrope/pele-go/raster/internal/resvg"
 )
@@ -31,6 +32,9 @@ type RasterOptions struct {
 	// depends on the diagram. Past resvg's cap the render fails with a wasm
 	// error.
 	MaxPixels int
+	// Timeout bounds this raster; zero uses resvg's default of 10 seconds.
+	// Past it Rasterize stops resvg and returns [ErrRasterTimeout], wrapped.
+	Timeout time.Duration
 }
 
 // Rasterizer turns Pele SVG into pixels. It is not safe for concurrent use;
@@ -153,7 +157,7 @@ func (r *Rasterizer) Rasterize(res Result, theme Theme, opts RasterOptions) (*im
 	if err != nil {
 		return nil, fmt.Errorf("rasterize: %w", err)
 	}
-	img, err := r.engine.Render([]byte(normalizeRootFont(svg)), w, h)
+	img, err := r.engine.RenderWithin([]byte(normalizeRootFont(svg)), w, h, opts.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("rasterize: %w", err)
 	}
