@@ -53,7 +53,8 @@ type renderLimits struct {
 	Timeout time.Duration
 }
 
-// defaultLimits leave room for a 64 MB full-size diagram and its working memory.
+// defaultLimits leave room for a 16M-pixel image (64 MB of RGBA) and its
+// working memory.
 var defaultLimits = renderLimits{Memory: defaultMemoryLimit, Timeout: defaultTimeout}
 
 const (
@@ -111,7 +112,8 @@ func newWithLimits(ctx context.Context, limits renderLimits, cacheDir string) (*
 	if cacheDir != "" {
 		// wazero fails the compile when it can't write the cache, and a
 		// corrupt entry fails it too; both still compile without one.
-		if e, err := compile(ctx, limits, cacheDir); err == nil {
+		e, err := compile(ctx, limits, cacheDir)
+		if err == nil {
 			return e, nil
 		}
 	}
@@ -135,7 +137,8 @@ func compile(ctx context.Context, limits renderLimits, cacheDir string) (*Engine
 	}
 	e.rt = wazero.NewRuntimeWithConfig(ctx, cfg)
 	newRuntimeMu.Unlock()
-	if _, err := wasi_snapshot_preview1.Instantiate(ctx, e.rt); err != nil {
+	_, err := wasi_snapshot_preview1.Instantiate(ctx, e.rt)
+	if err != nil {
 		_ = e.Close()
 		return nil, fmt.Errorf("resvg: wasi: %w", err)
 	}
