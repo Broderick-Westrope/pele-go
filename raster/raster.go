@@ -40,9 +40,9 @@ type Rasterizer struct {
 // NewRasterizer compiles resvg, which takes a few hundred milliseconds, or
 // loads it from cacheDir when an earlier Rasterizer left it there. An empty
 // cacheDir always compiles. The Rasterizer keeps ctx for its whole life:
-// every Rasterize and Close runs under it and fails once it is done, with
-// [ErrRasterTimeout] if it had a deadline. Pass a long-lived context, not a
-// request's.
+// every Rasterize runs under it and fails once it is done, with
+// [ErrRasterTimeout] if it had a deadline, so pass a long-lived context,
+// not a request's. Close frees everything either way.
 func NewRasterizer(ctx context.Context, cacheDir string) (*Rasterizer, error) {
 	e, err := resvg.New(ctx, cacheDir)
 	if err != nil {

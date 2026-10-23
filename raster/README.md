@@ -52,8 +52,8 @@ if err != nil {
   compiles resvg (a few hundred milliseconds, about 75 MB of short-lived garbage) unless
   `cacheDir` holds code an earlier `Rasterizer` compiled, in which case it loads in
   milliseconds. The cache holds native code, so the directory must be writable only by you.
-  It keeps the context you create it with, and fails every call once that context is done,
-  so give it a long-lived one. `Close` frees everything it holds.
+  It keeps the context you create it with, and every `Rasterize` fails once that context
+  is done, so give it a long-lived one. `Close` frees everything it holds either way.
 - The image's background is transparent. Draw it over the theme's `pele-bg` yourself if you
   need an opaque one, for example before posting it somewhere with a different background.
 - `Rasterize` caps the image at `RasterOptions.MaxPixels` (default `MaxPixels`), shrinking
