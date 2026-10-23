@@ -107,7 +107,8 @@ jobs:
         if: env.MIN_GO_LINUX == 'true'
         working-directory: .
         run: |
-          if go list -m all | grep -q tetratelabs/wazero; then
+          mods=$(go list -m all)
+          if grep -q tetratelabs/wazero <<<"$mods"; then
             echo "pele-go's root module requires wazero; only raster/go.mod may" >&2
             exit 1
           fi
@@ -136,9 +137,12 @@ jobs:
         run: |
           go work init .. .
           if ! { go vet ./... && go test ./...; }; then
-            echo "::warning::raster fails against pele-go at this commit; it will need a fix before the next root tag is bumped into raster/go.mod"
+            msg="raster fails against pele-go at this commit; it will need a fix before the next root tag is bumped into raster/go.mod"
+            echo "::warning::$msg"
+            echo "**Warning:** $msg" >>"$GITHUB_STEP_SUMMARY"
             exit 1
           fi
+          echo "raster passes against pele-go at this commit." >>"$GITHUB_STEP_SUMMARY"
 
   fuzz-smoke:
     if: github.event_name != 'schedule'
