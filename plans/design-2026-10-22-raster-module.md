@@ -123,8 +123,12 @@ output, memory or latency. The proxy can then import a tagged version.
 - **Runs:**
   - Build `go test -c` binaries at the harness commit (A) and after the
     switch (B).
-  - Run them interleaved, ABABABAB, on the same machine, so drift doesn't
-    line up with the before/after split.
+  - Run them interleaved on the same machine, alternating AB and BA, so
+    drift and first-run effects don't line up with the before/after
+    split.
+  - Build A with the final harness, at the commit before the switch. The
+    harness was fixed after the switch (its memory baseline loaded resvg
+    first), and A and B must differ only in the import path.
 - **Pass:**
   - For metrics 1–3, benchstat reports no statistically significant
     regression (p < 0.05), and the median of per-run medians is at most 5%
