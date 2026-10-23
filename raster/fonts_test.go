@@ -1,6 +1,8 @@
 package raster_test
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,4 +30,32 @@ func TestFontFacesAreTheEmbeddedFonts(t *testing.T) {
 		require.Equal(t, want, f.Data, file)
 		delete(files, [2]string{f.Weight, f.Style})
 	}
+}
+
+// pele-go's fontmeasure tests measure with its own copies of the fonts, so
+// they only vouch for these if the files are identical. The fonts also have
+// to match the ones compiled into resvg.wasm; see the README.
+func TestFontsMatchFontmeasureTestFonts(t *testing.T) {
+	t.Parallel()
+
+	theirs := filepath.Join("..", "fontmeasure", "testdata")
+	if _, err := os.Stat(theirs); err != nil {
+		t.Skipf("pele-go's fontmeasure is not next to this module (tested from the module cache?): %v", err)
+	}
+	ours := hashFonts(t, "fonts")
+	require.NotEmpty(t, ours)
+	require.Equal(t, ours, hashFonts(t, theirs))
+}
+
+func hashFonts(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	files, err := filepath.Glob(filepath.Join(dir, "*.ttf"))
+	require.NoError(t, err)
+	sums := map[string]string{}
+	for _, f := range files {
+		data, err := os.ReadFile(f)
+		require.NoError(t, err)
+		sums[filepath.Base(f)] = fmt.Sprintf("%x", sha256.Sum256(data))
+	}
+	return sums
 }
