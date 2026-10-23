@@ -155,14 +155,22 @@ Byte-identical is checked by string comparison against upstream itself, not by e
 
 goja is test-only; it doesn't end up in your binary.
 
+## Versioning
+
+pele-go has its own semver tags, which change with changes here, separately from upstream's
+version numbers. The upstream release it matches is in `pele.UpstreamVersion` and the
+commit that release's tag points to is in `pele.UpstreamCommit`. Currently that's Pele 1.7.0,
+commit `8603bf3313add9143cd417015d4a6bd6c522dada`.
+
 ## Following upstream releases
 
 Each Pele release becomes one change here: port the diff between tags file for file (the Go
 files map one-to-one to upstream's `src/`), then bump the pinned oracle and regenerate the
 fixtures:
 
-- `internal/oracle`: the npm bundle, its checksum and `Version`; `UpstreamVersion` in
-  `pele.go`; `tests/corpus` into `internal/oracle/testdata/corpus`.
+- `internal/oracle`: the npm bundle, its checksum and `Version`; `UpstreamVersion` and
+  `UpstreamCommit` in `pele.go` (a test fails if `UpstreamVersion` and `Version` differ);
+  `tests/corpus` into `internal/oracle/testdata/corpus`.
 - `node scripts/capture-cases.mjs <pele checkout>` re-captures upstream's suite.
 - `node scripts/gen-shared-cases.mjs <pele checkout>` and the other `scripts/gen-*.mjs`
   regenerate the shared-module fixtures.
