@@ -3,9 +3,12 @@ package raster_test
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/Broderick-Westrope/pele-go/raster"
@@ -40,8 +43,10 @@ func TestFontsMatchFontmeasureTestFonts(t *testing.T) {
 	t.Parallel()
 
 	theirs := filepath.Join("..", "fontmeasure", "testdata")
-	if _, err := os.Stat(theirs); err != nil {
+	if _, err := os.Stat(theirs); errors.Is(err, fs.ErrNotExist) {
 		t.Skipf("pele-go's fontmeasure is not next to this module (tested from the module cache?): %v", err)
+	} else {
+		require.NoError(t, err)
 	}
 	ours := hashFonts(t, "fonts")
 	require.NotEmpty(t, ours)
@@ -72,7 +77,10 @@ func TestFontsAreTheOnesCompiledIntoResvg(t *testing.T) {
 	require.NoError(t, err)
 	for _, f := range raster.FontFaces() {
 		chunks := nonZeroRuns(f.Data, 8)
-		require.NotEmpty(t, chunks)
+		// Short chunks match almost anywhere, so the long ones carry the
+		// check.
+		longest := slices.MaxFunc(chunks, func(a, b []byte) int { return len(a) - len(b) })
+		require.Greater(t, len(longest), 1<<10, "%s %s", f.Weight, f.Style)
 		for _, c := range chunks {
 			require.True(t, bytes.Contains(wasm, c), "%s %s: %d bytes at the font's offset %d are not in resvg.wasm",
 				f.Weight, f.Style, len(c), bytes.Index(f.Data, c))
