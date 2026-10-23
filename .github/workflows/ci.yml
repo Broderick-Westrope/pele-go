@@ -96,6 +96,9 @@ jobs:
           go-version: ${{ matrix.go-version }}
           go-version-file: ${{ matrix.go-version-file }}
           cache-dependency-path: raster/go.sum
+      - name: go mod tidy
+        if: env.MIN_GO_LINUX == 'true'
+        run: go mod tidy -diff
       - name: go vet
         run: go vet ./...
       # A pinned staticcheck can't always analyse the newest Go.
