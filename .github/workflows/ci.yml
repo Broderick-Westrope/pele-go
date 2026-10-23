@@ -60,6 +60,33 @@ jobs:
       - name: go test -race
         run: go test -race -timeout 30m ./...
 
+  # raster is a nested module, so the root jobs' ./... doesn't reach it.
+  raster:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: raster
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: raster/go.mod
+          cache-dependency-path: raster/go.sum
+      - name: go vet
+        run: go vet ./...
+      - name: staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+      - name: go test -race
+        run: go test -race -timeout 15m ./...
+      # The agent proxy builds on the oldest Go raster/go.mod allows, without cgo.
+      - name: Build tests with Go 1.26.0 and no cgo
+        env:
+          GOTOOLCHAIN: go1.26.0
+          CGO_ENABLED: "0"
+        run: go test -c -o "$RUNNER_TEMP/" ./...
+
   fuzz-smoke:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
