@@ -15,13 +15,23 @@ var (
 	fontBoldItalic []byte
 )
 
-// fontFaces lists the embedded faces with their CSS weight and style.
-var fontFaces = [4]struct {
-	data          []byte
-	weight, style string
-}{
-	{fontRegular, "normal", "normal"},
-	{fontBold, "bold", "normal"},
-	{fontItalic, "normal", "italic"},
-	{fontBoldItalic, "bold", "italic"},
+// FontFace is one embedded DejaVu Sans face with its CSS font-weight and
+// font-style, for embedding in pages that show the SVG, so a browser draws
+// labels in the font they were measured in.
+type FontFace struct {
+	// Data is the TrueType file. It aliases the embedded bytes, so callers
+	// must not modify it.
+	Data          []byte
+	Weight, Style string
+}
+
+// FontFaces returns the faces the Renderer measures labels with and resvg
+// draws them in.
+func FontFaces() []FontFace {
+	return []FontFace{
+		{fontRegular, "normal", "normal"},
+		{fontBold, "bold", "normal"},
+		{fontItalic, "normal", "italic"},
+		{fontBoldItalic, "bold", "italic"},
+	}
 }
