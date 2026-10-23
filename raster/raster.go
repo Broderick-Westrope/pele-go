@@ -27,7 +27,7 @@ type RasterOptions struct {
 	// MaxPixels caps width x height, shrinking Scale as far as it must to
 	// fit; zero uses [MaxPixels]. resvg's memory is capped at 256 MB, which
 	// leaves room for at least 16M pixels (64 MB of RGBA); how much more
-	// depends on the diagram. Past the cap the render fails with a wasm
+	// depends on the diagram. Past resvg's cap the render fails with a wasm
 	// error.
 	MaxPixels int
 }

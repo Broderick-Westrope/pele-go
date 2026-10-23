@@ -45,9 +45,10 @@ if err != nil {
 // img is an *image.RGBA; encode it however you like, e.g. with image/png.
 ```
 
-- `Renderer` is safe for concurrent use. It refuses sources over `MaxSourceBytes`, stops
-  layout after 5 seconds with `ErrRenderTimeout`, and turns images off and responsive
-  sizing off, since the source may be untrusted.
+- `Renderer` is safe for concurrent use. It refuses sources over `MaxSourceBytes` and stops
+  layout after 5 seconds with `ErrRenderTimeout`. It turns images off, since the source may
+  be untrusted and a browser showing the SVG would fetch them, and responsive sizing off,
+  so the SVG has a fixed size to rasterize.
 - `Rasterizer` is not safe for concurrent use, and you own its lifecycle. Creating one
   compiles resvg (a few hundred milliseconds, about 75 MB of short-lived garbage) unless
   `cacheDir` holds code an earlier `Rasterizer` compiled, in which case it loads in
@@ -57,8 +58,9 @@ if err != nil {
 - The image's background is transparent. Draw it over the theme's `pele-bg` yourself if you
   need an opaque one, for example before posting it somewhere with a different background.
 - `Rasterize` caps the image at `RasterOptions.MaxPixels` (default `MaxPixels`), shrinking
-  the scale only as far as it must. resvg's memory is capped at 256 MB, room for at least 16M
-  pixels; past it the render fails with a wasm error. resvg running past 10 seconds returns `ErrRasterTimeout`, wrapped.
+  the scale only as far as it must. resvg's memory is capped at 256 MB, room for at least
+  16M pixels; past that cap the render fails with a wasm error. resvg running past 10
+  seconds returns `ErrRasterTimeout`, wrapped.
 - This module requires pele-go itself, and is tested against that version only. Take
   pele-go upgrades through raster releases rather than bumping
   `github.com/Broderick-Westrope/pele-go` in your own `go.mod`.
@@ -68,6 +70,8 @@ if err != nil {
   Unlike `Rasterize`, it leaves `color-mix()` for the browser to resolve.
 
 ## Upgrading resvg or the fonts
+
+Paths starting `../` are in the pele-go repository, outside this module.
 
 The fonts are embedded twice: as `fonts/*.ttf`, which pele-go measures labels with, and
 compiled into `internal/resvg/resvg.wasm`, which draws them. They must be the same files,
@@ -97,8 +101,9 @@ three steps, and one pull request can't do all of them:
 
 Before step 1, open the raster (ubuntu-latest, minimum Go) job's summary on the commit you
 tag and check it says raster passes against pele-go at that commit. The step only warns,
-so the check itself stays green either way. A tag is permanent once the Go module proxy has fetched it.
-To withdraw a bad release, tag a new one whose `go.mod` has a `retract` directive for it.
+so the check itself stays green either way. A tag is permanent once the Go module proxy
+has fetched it. To withdraw a bad release, tag a new one whose `go.mod` has a `retract`
+directive for it.
 
 ## Licence
 

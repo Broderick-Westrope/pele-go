@@ -35,8 +35,10 @@ var (
 // Options controls Pele's layout.
 type Options struct {
 	// MaxWidth is the available width in pixels. A type that can draw
-	// itself narrower does. Zero lays diagrams out as if no width were
-	// given, at their natural size.
+	// itself narrower does. It is always passed to pele-go, so zero means a
+	// width of 0, not "unset": most types then lay out at their natural
+	// size, but some, such as treeview and a packet drawn downwards, then
+	// draw as narrow as they can.
 	MaxWidth int
 }
 
