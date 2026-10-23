@@ -35,3 +35,19 @@ func TestResolveVarsLeavesColorMix(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, got, `fill="color-mix(in srgb,#ff0000 50%,#0000ff)"`)
 }
+
+// The MaxPixels doc promises room for at least 16M pixels under resvg's
+// memory cap.
+func TestRasterize16MegapixelsFitsResvgMemory(t *testing.T) {
+	t.Parallel()
+
+	rast, err := raster.NewRasterizer(t.Context(), "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = rast.Close() })
+	res := raster.Result{SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="4096" height="4096"><rect width="4096" height="4096" fill="#f00"/></svg>`, Width: 4096, Height: 4096}
+
+	img, err := rast.Rasterize(res, nil, raster.RasterOptions{Scale: 1, MaxPixels: 16 << 20})
+	require.NoError(t, err)
+	require.Equal(t, 4096, img.Bounds().Dx())
+	require.Equal(t, 4096, img.Bounds().Dy())
+}
