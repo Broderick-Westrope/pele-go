@@ -65,6 +65,14 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest Go raster/go.mod allows, which the agent proxy builds
+        # with, and the newest, which Anvil tracks.
+        include:
+          - go-version-file: raster/go.mod
+          - go-version: stable
     defaults:
       run:
         working-directory: raster
@@ -72,7 +80,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: raster/go.mod
+          go-version: ${{ matrix.go-version }}
+          go-version-file: ${{ matrix.go-version-file }}
           cache-dependency-path: raster/go.sum
       - name: go vet
         run: go vet ./...
@@ -80,12 +89,16 @@ jobs:
         run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
       - name: go test -race
         run: go test -race -timeout 15m ./...
-      # The agent proxy builds on the oldest Go raster/go.mod allows, without cgo.
       - name: Build tests with Go 1.26.0 and no cgo
+        if: matrix.go-version-file != ''
         env:
           GOTOOLCHAIN: go1.26.0
           CGO_ENABLED: "0"
         run: go test -c -o "$RUNNER_TEMP/" ./...
+      # raster/go.mod pins a tagged pele-go, so check this commit's root
+      # module too, before a root change that breaks raster gets tagged.
+      - name: go test against pele-go at this commit
+        run: go work init .. . && go vet ./... && go test ./...
 
   fuzz-smoke:
     if: github.event_name != 'schedule'
