@@ -22,7 +22,8 @@ var ErrRasterTimeout = resvg.ErrRenderTimeout
 
 // RasterOptions controls how a diagram is rasterized.
 type RasterOptions struct {
-	// Scale multiplies the diagram's natural size.
+	// Scale multiplies the diagram's natural size. It must be positive and
+	// finite.
 	Scale float64
 	// MaxPixels caps width x height, shrinking Scale as far as it must to
 	// fit; zero uses [MaxPixels]. resvg's memory is capped at 256 MB, which
@@ -42,8 +43,8 @@ type Rasterizer struct {
 // loads it from cacheDir when an earlier Rasterizer left it there. An empty
 // cacheDir always compiles. The Rasterizer keeps ctx for its whole life:
 // every Rasterize runs under it and fails once it is done, with
-// [ErrRasterTimeout] if it had a deadline, so pass a long-lived context,
-// not a request's. Close frees everything either way.
+// [ErrRasterTimeout] if its deadline passed and a wrapped wazero error if
+// it was cancelled, so pass a long-lived context, not a request's. Close frees everything either way.
 func NewRasterizer(ctx context.Context, cacheDir string) (*Rasterizer, error) {
 	e, err := resvg.New(ctx, cacheDir)
 	if err != nil {

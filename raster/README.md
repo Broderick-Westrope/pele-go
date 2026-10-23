@@ -66,8 +66,8 @@ if err != nil {
   `github.com/Broderick-Westrope/pele-go` in your own `go.mod`.
 - `Theme` maps Pele's CSS variables, without the leading `--`, to values. resvg can't
   resolve CSS variables, so `Rasterize` substitutes them first. `ResolveVars` does the same
-  for SVG you show in a browser, and `FontFaces` returns the fonts to embed alongside it.
-  Unlike `Rasterize`, it leaves `color-mix()` for the browser to resolve.
+  for SVG you show in a browser, though unlike `Rasterize` it leaves `color-mix()` for the
+  browser to resolve. `FontFaces` returns the fonts to embed alongside it.
 
 ## Upgrading resvg or the fonts
 

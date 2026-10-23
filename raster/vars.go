@@ -42,8 +42,8 @@ func ResolveVars(svg string, theme Theme) (string, error) {
 // resvg cannot resolve custom properties, then applies each of post to every
 // attribute value. Pele declares its variables only in the root <svg>
 // element's style attribute and emits no <style> element, so only those
-// declarations count. Text is never touched: labels are model-written and
-// may contain anything that looks like CSS. Theme entries take precedence
+// declarations count. Text is never touched: labels come from untrusted
+// source and may contain anything that looks like CSS. Theme entries take precedence
 // over the SVG's declarations. The output is capped at a few times the
 // input, so chained variables can't expand without bound.
 func resolveVars(svg string, theme Theme, post ...func(string) string) (string, error) {
