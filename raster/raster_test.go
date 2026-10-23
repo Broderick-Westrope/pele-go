@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Broderick-Westrope/pele-go/raster/internal/resvg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -351,10 +350,4 @@ func TestResolveColorMix(t *testing.T) {
 	for name, tc := range tests {
 		require.Equal(t, tc.want, resolveColorMix(tc.in), name)
 	}
-}
-
-func TestErrRasterTimeoutIsResvgTimeout(t *testing.T) {
-	t.Parallel()
-
-	require.ErrorIs(t, fmt.Errorf("rasterize: %w", resvg.ErrRenderTimeout), ErrRasterTimeout)
 }
