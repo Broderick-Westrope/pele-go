@@ -1,6 +1,7 @@
 package raster
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -218,7 +219,7 @@ func TestRasterizeTransparentBackground(t *testing.T) {
 // explodingVarsSVG declares a chain of variables that each use the next
 // twice, so substituting them doubles at every link. Twenty links expand
 // to about 4 MB, past the 1 MiB cap but small enough that a test run with
-// the cap broken (as mutation testing does) doesn't exhaust memory.
+// the cap broken doesn't exhaust memory.
 var explodingVarsSVG = func() string {
 	const links = 20
 	var decls strings.Builder
@@ -260,8 +261,8 @@ func TestRenderLabelDeclaringVariablesStaysSmall(t *testing.T) {
 		if err == nil {
 			var svg string
 			svg, err = ResolveVars(res.SVG, testTheme)
-			if err == nil && len(svg) > 2*len(res.SVG) {
-				err = fmt.Errorf("resolved SVG grew from %d to %d bytes", len(res.SVG), len(svg))
+			if err == nil && !strings.Contains(svg, ">--zz:var(--zz)var(--zz)<") {
+				err = errors.New("the label was not kept verbatim")
 			}
 		}
 		done <- err
