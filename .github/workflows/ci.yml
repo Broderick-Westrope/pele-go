@@ -85,7 +85,9 @@ jobs:
           cache-dependency-path: raster/go.sum
       - name: go vet
         run: go vet ./...
+      # A pinned staticcheck can't always analyse the newest Go.
       - name: staticcheck
+        if: matrix.go-version-file != ''
         run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
       - name: go test -race
         run: go test -race -timeout 15m ./...
@@ -95,9 +97,11 @@ jobs:
           GOTOOLCHAIN: go1.26.0
           CGO_ENABLED: "0"
         run: go test -c -o "$RUNNER_TEMP/" ./...
-      # raster/go.mod pins a tagged pele-go, so check this commit's root
-      # module too, before a root change that breaks raster gets tagged.
+      # raster/go.mod pins a tagged pele-go, so this warns when the root at
+      # this commit would break raster once tagged. It can't gate: a root
+      # change and raster's fix for it land in separate releases.
       - name: go test against pele-go at this commit
+        continue-on-error: true
         run: go work init .. . && go vet ./... && go test ./...
 
   fuzz-smoke:
