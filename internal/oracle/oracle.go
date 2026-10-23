@@ -15,8 +15,8 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/jsstr"
 )
 
-// Version is the upstream release the bundle was published as: tag 1.7.0, commit
-// 8603bf3313add9143cd417015d4a6bd6c522dada.
+// Version is the upstream release the bundle was published as. It must equal
+// pele.UpstreamVersion.
 const Version = "1.7.0"
 
 // bundleSHA256 is the checksum of dist/pele.global.js in the npm package pele@1.7.0.

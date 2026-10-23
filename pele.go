@@ -24,8 +24,13 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/text"
 )
 
-// UpstreamVersion is the Pele release this package matches.
-const UpstreamVersion = "1.7.0"
+// UpstreamVersion and UpstreamCommit are the Pele release this package matches and the
+// commit its tag points to. This module's own version is separate: it moves with changes
+// here, and a new upstream release only changes these.
+const (
+	UpstreamVersion = "1.7.0"
+	UpstreamCommit  = "8603bf3313add9143cd417015d4a6bd6c522dada"
+)
 
 // Options are the render options, upstream's RenderOptions. The zero value renders as
 // upstream does with no options. Pointer fields are unset when nil, so that a zero value can

@@ -4,6 +4,7 @@ package info
 import (
 	"math"
 
+	pele "github.com/Broderick-Westrope/pele-go"
 	"github.com/Broderick-Westrope/pele-go/internal/core"
 	"github.com/Broderick-Westrope/pele-go/internal/diagrams/common"
 	"github.com/Broderick-Westrope/pele-go/internal/jsobj"
@@ -11,9 +12,6 @@ import (
 	"github.com/Broderick-Westrope/pele-go/internal/svg"
 	"github.com/Broderick-Westrope/pele-go/internal/text"
 )
-
-// upstreamVersion is the Pele release this port matches, which the diagram shows.
-const upstreamVersion = "1.7.0"
 
 // Diagram is the info diagram type. Register it with pele.Register.
 var Diagram = &core.Diagram{
@@ -64,7 +62,7 @@ func renderInfo(m model, rc *core.Context) core.Rendered {
 	if title.Height > 0 {
 		titleHeight = title.Height + 8
 	}
-	version := text.Layout("Pele v"+upstreamVersion, false, measurer, size, 4000, 0, rc.Icons)
+	version := text.Layout("Pele v"+pele.UpstreamVersion, false, measurer, size, 4000, 0, rc.Icons)
 
 	width := math.Ceil(max(title.Width, version.Width) + 2*pad)
 	height := math.Ceil(titleHeight + version.Height + 2*pad)
