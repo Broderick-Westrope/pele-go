@@ -16,6 +16,10 @@ import (
 // RGBA), so one diagram can't grow resvg's memory without bound.
 const MaxPixels = 4096 * 2048
 
+// ErrRasterTimeout is returned, wrapped, when resvg runs past its deadline
+// while rasterizing. [ErrRenderTimeout] is the layout timeout.
+var ErrRasterTimeout = resvg.ErrRenderTimeout
+
 // RasterOptions controls how a diagram is rasterized.
 type RasterOptions struct {
 	// Scale multiplies the diagram's natural size.
