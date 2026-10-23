@@ -135,8 +135,7 @@ jobs:
         if: env.MIN_GO_LINUX == 'true'
         continue-on-error: true
         run: |
-          go work init .. .
-          if ! { go vet ./... && go test ./...; }; then
+          if ! { go work init .. . && go vet ./... && go test ./...; }; then
             msg="raster fails against pele-go at this commit; it will need a fix before the next root tag is bumped into raster/go.mod"
             echo "::warning::$msg"
             echo "**Warning:** $msg" >>"$GITHUB_STEP_SUMMARY"
