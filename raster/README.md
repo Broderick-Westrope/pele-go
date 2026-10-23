@@ -77,7 +77,10 @@ must also match `../fontmeasure/testdata/*.ttf` (`TestFontsMatchFontmeasureTestF
 
 ### Release order
 
-This module requires a tagged pele-go, so a change to the fonts or to `fontmeasure` takes
+A change to the fonts alone lands in one pull request (`fonts/`, `resvg.wasm` and
+`../fontmeasure/testdata` together) and then a tag of this module, since this module passes
+its own font bytes to `fontmeasure`. This module requires a tagged pele-go, though, so a
+change to `fontmeasure`'s code, or to anything else in pele-go this module relies on, takes
 three steps, and one pull request can't do all of them:
 
 1. Tag the root module (`vX.Y.Z`).
