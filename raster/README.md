@@ -95,8 +95,9 @@ three steps, and one pull request can't do all of them:
 2. Bump `github.com/Broderick-Westrope/pele-go` in this module's `go.mod` to that tag.
 3. Tag this module (`raster/vX.Y.Z`).
 
-Before step 1, check that CI's "go test against pele-go at this commit" step passed on the
-commit you tag; it only warns. A tag is permanent once the Go module proxy has fetched it.
+Before step 1, open the raster (ubuntu-latest, minimum Go) job's summary on the commit you
+tag and check it says raster passes against pele-go at that commit. The step only warns,
+so the check itself stays green either way. A tag is permanent once the Go module proxy has fetched it.
 To withdraw a bad release, tag a new one whose `go.mod` has a `retract` directive for it.
 
 ## Licence
@@ -104,4 +105,5 @@ To withdraw a bad release, tag a new one whose `go.mod` has a `retract` directiv
 MIT, see [LICENSE](LICENSE). `internal/resvg/resvg.wasm` is resvg and go-resvg, Apache-2.0,
 see [internal/resvg/LICENSE](internal/resvg/LICENSE). The DejaVu fonts are under the
 Bitstream Vera licence, see [fonts/LICENSE](fonts/LICENSE). Both are compiled into your
-binary.
+binary, as is pele-go itself, which is MIT licensed with Pele's notice (see its
+[LICENSE](https://github.com/Broderick-Westrope/pele-go/blob/main/LICENSE)).
