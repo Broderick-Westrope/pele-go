@@ -31,7 +31,7 @@ func TestFontFacesAreTheEmbeddedFonts(t *testing.T) {
 		require.True(t, ok, "unexpected face %s %s", f.Weight, f.Style)
 		want, err := os.ReadFile(filepath.Join("fonts", file))
 		require.NoError(t, err)
-		require.Equal(t, want, f.Data, file)
+		require.True(t, bytes.Equal(want, f.Data), "%s differs from the embedded face", file)
 		delete(files, [2]string{f.Weight, f.Style})
 	}
 }
@@ -43,11 +43,11 @@ func TestFontsMatchFontmeasureTestFonts(t *testing.T) {
 	t.Parallel()
 
 	theirs := filepath.Join("..", "fontmeasure", "testdata")
-	if _, err := os.Stat(theirs); errors.Is(err, fs.ErrNotExist) {
+	_, err := os.Stat(theirs)
+	if errors.Is(err, fs.ErrNotExist) {
 		t.Skipf("pele-go's fontmeasure is not next to this module (tested from the module cache?): %v", err)
-	} else {
-		require.NoError(t, err)
 	}
+	require.NoError(t, err)
 	ours := hashFonts(t, "fonts")
 	require.NotEmpty(t, ours)
 	require.Equal(t, ours, hashFonts(t, theirs))

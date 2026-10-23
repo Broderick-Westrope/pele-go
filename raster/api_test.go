@@ -18,7 +18,7 @@ func TestRasterizePastItsDeadlineReturnsErrRasterTimeout(t *testing.T) {
 	ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
 	defer cancel()
 	rast, err := raster.NewRasterizer(ctx, "")
-	require.NoError(t, err)
+	require.NoError(t, err, "making a Rasterizer doesn't check the context")
 	t.Cleanup(func() { require.NoError(t, rast.Close(), "Close still frees everything") })
 
 	res := raster.Result{SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>`, Width: 10, Height: 10}
