@@ -34,7 +34,9 @@ var (
 
 // Options controls Pele's layout.
 type Options struct {
-	// MaxWidth is the available width in pixels.
+	// MaxWidth is the available width in pixels. A type that can draw
+	// itself narrower does. Zero lays diagrams out as if no width were
+	// given, at their natural size.
 	MaxWidth int
 }
 
