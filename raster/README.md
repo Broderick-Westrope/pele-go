@@ -63,8 +63,8 @@ if err != nil {
 
 The fonts are embedded twice: as `fonts/*.ttf`, which pele-go measures labels with, and
 compiled into `internal/resvg/resvg.wasm`, which draws them. They must be the same files,
-or labels overflow their boxes. They must also match `../fontmeasure/testdata/*.ttf`,
-which `TestFontsMatchFontmeasureTestFonts` checks.
+or labels overflow their boxes (`TestFontsAreTheOnesCompiledIntoResvg` checks this). They
+must also match `../fontmeasure/testdata/*.ttf` (`TestFontsMatchFontmeasureTestFonts`).
 
 - **resvg:** `resvg.wasm` comes from
   [go-resvg](https://github.com/boolean-maybe/go-resvg) v0.0.2 (resvg 0.44). Rebuild it from

@@ -1,6 +1,7 @@
 package raster_test
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"os"
@@ -58,4 +59,35 @@ func hashFonts(t *testing.T, dir string) map[string]string {
 		sums[filepath.Base(f)] = fmt.Sprintf("%x", sha256.Sum256(data))
 	}
 	return sums
+}
+
+// resvg draws with the fonts compiled into resvg.wasm, so they must be the
+// ones the Renderer measures with. The wasm data segments hold each font
+// without its long runs of zero bytes, so every stretch between those runs
+// must appear in the wasm verbatim.
+func TestFontsAreTheOnesCompiledIntoResvg(t *testing.T) {
+	t.Parallel()
+
+	wasm, err := os.ReadFile(filepath.Join("internal", "resvg", "resvg.wasm"))
+	require.NoError(t, err)
+	for _, f := range raster.FontFaces() {
+		chunks := nonZeroRuns(f.Data, 8)
+		require.NotEmpty(t, chunks)
+		for _, c := range chunks {
+			require.True(t, bytes.Contains(wasm, c), "%s %s: %d bytes at the font's offset %d are not in resvg.wasm",
+				f.Weight, f.Style, len(c), bytes.Index(f.Data, c))
+		}
+	}
+}
+
+// nonZeroRuns splits data at every run of at least minZeros zero bytes,
+// dropping the zeros.
+func nonZeroRuns(data []byte, minZeros int) [][]byte {
+	var chunks [][]byte
+	for _, c := range bytes.Split(data, make([]byte, minZeros)) {
+		if c = bytes.Trim(c, "\x00"); len(c) > 0 {
+			chunks = append(chunks, c)
+		}
+	}
+	return chunks
 }
