@@ -55,6 +55,9 @@ if err != nil {
 - `Rasterize` caps the image at `RasterOptions.MaxPixels` (default `MaxPixels`), shrinking
   the scale only as far as it must. resvg running past 10 seconds returns
   `ErrRasterTimeout`, wrapped.
+- This module requires pele-go itself, and is tested against that version only. Take
+  pele-go upgrades through raster releases rather than bumping
+  `github.com/Broderick-Westrope/pele-go` in your own `go.mod`.
 - `Theme` maps Pele's CSS variables, without the leading `--`, to values. resvg can't
   resolve CSS variables, so `Rasterize` substitutes them first. `ResolveVars` does the same
   for SVG you show elsewhere, and `FontFaces` returns the fonts to embed alongside it.
