@@ -74,12 +74,13 @@ output, memory or latency. The proxy can then import a tagged version.
   and `resvg_test.go`, with these changes:
   - `TestRasterizeDiagrams` and `TestRenderLabelDeclaringVariablesStaysSmall`
     call `HTMLDocument` today. In the module they assert on
-    `ResolveVars(...)` instead: no `var(` remains, and the size stays
-    bounded.
+    `ResolveVars(...)` instead: no `var(` remains, and a label declaring
+    variables survives verbatim. (A size bound can't catch a wrongly
+    expanded self-referencing label, which shrinks.)
   - `MERMAID_TEST_OUT` keeps writing the PNGs and `flowchart.svg` from the
     module.
 - **Anvil keeps `export_test.go`,** with its own copies of the fixtures it
-  used from `raster_test.go` (`sampleDiagrams`, `testTheme`,
+  used from `raster_test.go` (the `nested` sample diagram, `testTheme`,
   `explodingVarsSVG`). It counts `raster.FontFaces()` instead of
   `fontFaces`, and keeps a label-declares-variables case for `HTMLDocument`.
 - **Heap-growth tests** (`TestRenderAcrossGCsDoesNotGrow`,
