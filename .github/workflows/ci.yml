@@ -62,6 +62,7 @@ jobs:
 
   # raster is a nested module, so the root jobs' ./... doesn't reach it.
   raster:
+    name: raster (${{ matrix.os }}, ${{ matrix.min-go && 'minimum Go' || 'stable Go' }})
     if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -102,6 +103,14 @@ jobs:
       - name: go mod tidy
         if: env.MIN_GO_LINUX == 'true'
         run: go mod tidy -diff
+      - name: Root module doesn't require wazero
+        if: env.MIN_GO_LINUX == 'true'
+        working-directory: .
+        run: |
+          if go list -m all | grep -q tetratelabs/wazero; then
+            echo "pele-go's root module requires wazero; only raster/go.mod may" >&2
+            exit 1
+          fi
       - name: go vet
         run: go vet ./...
       # A pinned staticcheck can't always analyse the newest Go.
