@@ -69,6 +69,22 @@ if err != nil {
   for SVG you show in a browser, though unlike `Rasterize` it leaves `color-mix()` for the
   browser to resolve. `FontFaces` returns the fonts to embed alongside it.
 
+## Command line
+
+`cmd/pele` is a small CLI that demonstrates the package end to end. From this directory:
+
+```sh
+go run ./cmd/pele -theme dark -o diagram.png diagram.mmd
+echo 'flowchart LR
+  A --> B' | go run ./cmd/pele -o diagram.svg
+```
+
+It reads the file named, or standard input, and writes PNG unless `-o` ends in `.svg` or
+`-format svg` is given. `-theme light|dark` picks a palette, `-var name=value` overrides
+one of its variables, `-scale` and `-width` size the image, and `-transparent` skips
+painting `pele-bg` behind the PNG. It caches compiled resvg under the user cache
+directory, so runs after the first skip the compile.
+
 ## Upgrading resvg or the fonts
 
 Paths starting `../` are in the pele-go repository, outside this module.
