@@ -71,19 +71,12 @@ if err != nil {
 
 ## Command line
 
-`cmd/pele` is a small CLI that demonstrates the package end to end. From this directory:
+[`cmd/pele`](cmd/pele/README.md) is a small CLI that renders a Mermaid file to PNG or SVG,
+as a demo of the package end to end:
 
 ```sh
 go run ./cmd/pele -theme dark -o diagram.png diagram.mmd
-echo 'flowchart LR
-  A --> B' | go run ./cmd/pele -o diagram.svg
 ```
-
-It reads the file named, or standard input, and writes PNG unless `-o` ends in `.svg` or
-`-format svg` is given. `-theme light|dark` picks a palette, `-var name=value` overrides
-one of its variables, `-scale` and `-width` size the image, and `-transparent` skips
-painting `pele-bg` behind the PNG. It caches compiled resvg under the user cache
-directory, so runs after the first skip the compile.
 
 ## Upgrading resvg or the fonts
 
