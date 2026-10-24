@@ -32,6 +32,30 @@ echo 'flowchart LR
 pele -transparent -var pele-accent=#e45756 diagram.mmd > diagram.png
 ```
 
+## Gallery
+
+pele drew these from the sources in [`examples`](examples). To redraw them, run these from
+that directory:
+
+```sh
+pele -o pipeline.png pipeline.mmd
+```
+
+![A flowchart from Mermaid source through pele-go and resvg to PNG](examples/pipeline.png)
+
+```sh
+pele -theme dark -o sequence.png sequence.mmd
+```
+
+![A dark sequence diagram of the CLI calling pele-go and resvg](examples/sequence.png)
+
+```sh
+pele -var pele-bg=#fdf6e3 -var pele-fg=#3b3227 -var pele-line=#3b3227 \
+  -var pele-surface=#f4e9cf -var pele-border=#b58900 -o states.png states.mmd
+```
+
+<img src="examples/states.png" width="250" alt="A state diagram in a custom warm theme">
+
 ## Flags
 
 | Flag | Default | |

@@ -1,0 +1,9 @@
+stateDiagram-v2
+  [*] --> Parsing
+  Parsing --> Layout: valid source
+  Parsing --> Failed: syntax error
+  Layout --> Rasterizing
+  Rasterizing --> Done
+  Rasterizing --> Failed: timeout
+  Done --> [*]
+  Failed --> [*]

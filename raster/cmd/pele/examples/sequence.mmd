@@ -1,0 +1,10 @@
+sequenceDiagram
+  participant CLI as pele
+  participant Layout as pele-go
+  participant Raster as resvg (wasm)
+  CLI->>Layout: Render(source, options)
+  Layout-->>CLI: SVG, width, height
+  CLI->>Raster: Rasterize(svg, scale)
+  Note over Raster: fonts compiled in,<br/>no cgo or browser
+  Raster-->>CLI: image.RGBA
+  CLI->>CLI: encode PNG

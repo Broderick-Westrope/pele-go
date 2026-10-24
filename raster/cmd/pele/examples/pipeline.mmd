@@ -1,0 +1,6 @@
+flowchart LR
+  src[Mermaid source] --> parse{pele-go}
+  parse -->|layout| svg[SVG]
+  svg --> resvg[[resvg in WebAssembly]]
+  resvg --> png[(PNG)]
+  svg --> browser([Browser])
